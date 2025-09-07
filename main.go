@@ -1,11 +1,10 @@
 package main
 
 import (
+	"DIMISA/src/core/mysql"
 	"log"
 	"net/http"
 	"os"
-
-	"DIMISA/src/core/mysql"
 
 	"github.com/joho/godotenv"
 )

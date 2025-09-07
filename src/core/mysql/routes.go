@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"DIMISA/src/areas/areasApp"
+	"DIMISA/src/areas/areasInfra"
 	"DIMISA/src/camas/camasApp"
 	"DIMISA/src/camas/camasInfra"
 	"DIMISA/src/users/userApp"
@@ -72,4 +74,31 @@ func RegisterRoutes(db *sql.DB) {
 	http.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
 
 	log.Println("✅ Rutas de camas registradas")
+
+	areaRepo := &areasInfra.AreasRepository{DB: db}
+
+	createAreaUC := &areasApp.CreateAreaUseCase{
+		Repo:     areaRepo,
+		CamaRepo: camaRepo,
+	}
+	updateAreaUC := &areasApp.UpdateAreaUseCase{Repo: areaRepo}
+	getAllAreaUC := &areasApp.GetAllAreasUseCase{Repo: areaRepo}
+	getByIDAreaUC := &areasApp.GetAreaByIDUseCase{Repo: areaRepo}
+	deleteAreaUC := &areasApp.DeleteAreaUseCase{Repo: areaRepo}
+
+	areaController := areasInfra.NewAreasController(
+		createAreaUC,
+		updateAreaUC,
+		getAllAreaUC,
+		getByIDAreaUC,
+		deleteAreaUC,
+	)
+
+	http.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
+	http.HandleFunc("/areas/update", areaController.UpdateAreaHandler) // PUT
+	http.HandleFunc("/areas/delete", areaController.DeleteAreaHandler) // DELETE
+	http.HandleFunc("/areas/all", areaController.GetAllAreasHandler)   // POST
+	http.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
+
+	log.Println("✅ Rutas de áreas registradas")
 }

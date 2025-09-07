@@ -10,18 +10,11 @@ type CamaRepository struct {
 }
 
 func (r *CamaRepository) CreateCama(cama *camaEntity.CamaEntity) error {
-	query := `INSERT INTO camas (id_area, numero_cama, nombres, apellido1, apellido2, fecha_nac, expediente, riesgo_caida, riesgo_ulcera, habilitada)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO camas (id_area, numero_cama, habilitada)
+	          VALUES (?, ?, ?)`
 	_, err := r.DB.Exec(query,
 		cama.Id_area,
 		cama.Numero_cama,
-		cama.Nombres,
-		cama.Apellido1,
-		cama.Apellido2,
-		cama.Fecha_nac,
-		cama.Expediente,
-		cama.Riesgo_caida,
-		cama.Riesgo_ulcera,
 		cama.Habilitada,
 	)
 	return err
