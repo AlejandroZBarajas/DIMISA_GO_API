@@ -1,13 +1,8 @@
 package userApp
-/* 
 
-import "DIMISA/src/users/userDomain"
+/* import "DIMISA/src/users/userDomain"
 
-type AssignTurnoUseCase struct {
+type AsignarTurnoUseCase struct {
 	Repo userDomain.UsersEnfInterface
 }
-
-func (uc *AssignTurnoUseCase) Execute(userID, turnoID int32) error {
-	return uc.Repo.AsignarTurno(userID, turnoID)
-}
- */
+*/

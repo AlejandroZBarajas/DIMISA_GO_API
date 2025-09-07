@@ -1,9 +1,8 @@
 package userApp
-/* 
 
 import (
-	"DIMISA/src/users/userDomain/usersEntities"
 	"DIMISA/src/users/userDomain"
+	"DIMISA/src/users/userDomain/usersEntities"
 )
 
 type UpdateUserUseCase struct {
@@ -13,4 +12,3 @@ type UpdateUserUseCase struct {
 func (uc *UpdateUserUseCase) Execute(user *usersEntities.UserEntity) error {
 	return uc.Repo.UpdateUser(user)
 }
- */

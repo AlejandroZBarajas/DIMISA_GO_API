@@ -2,20 +2,20 @@ package usersEntities
 
 type UserCendisEntity struct {
 	UserEntity
-	Id_user int32 `json:"id_user"`
+	Id_user   int32 `json:"id_user"`
 	Id_cendis int32 `json:"id_cendis"`
-	Id_turno int32 `json:"id_turno"`
+	//Id_turno int32 `json:"id_turno"`
 }
 
-func CreateUserCendis(id_user int32, id_cendis int32, id_turno int32) *UserCendisEntity {
+func CreateUserCendis(id_user int32, id_cendis int32 /* id_turno int32 */) *UserCendisEntity {
 	return &UserCendisEntity{
-		Id_user:  id_user,
+		Id_user:   id_user,
 		Id_cendis: id_cendis,
-		Id_turno: id_turno,
+		//Id_turno: id_turno,
 	}
 }
 
-/* 
+/*
 EJEMPLO de uso
 
 cendisUser := UserCendisEntity{
