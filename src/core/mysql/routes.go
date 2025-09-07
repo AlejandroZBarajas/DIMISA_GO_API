@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"DIMISA/src/camas/camasApp"
+	"DIMISA/src/camas/camasInfra"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
 	"database/sql"
@@ -9,32 +11,29 @@ import (
 )
 
 func RegisterRoutes(db *sql.DB) {
-	// Repositorio
+
 	userRepo := &userInfra.UserRepository{DB: db}
 
-	// UseCases
-	createUC := &userApp.CreateUserUseCase{Repo: userRepo}
-	updateUC := &userApp.UpdateUserUseCase{Repo: userRepo}
-	deleteUC := &userApp.DeleteUserUseCase{Repo: userRepo}
-	getAllUC := &userApp.GetAllUsersUseCase{Repo: userRepo}
-	getByRolUC := &userApp.GetUsersByRolUseCase{Repo: userRepo}
-	getByIdUC := &userApp.GetUserByIDUseCase{Repo: userRepo}
-	getByAreaUC := &userApp.GetUsersByAreaUseCase{Repo: userRepo}
-	getByCendisUC := &userApp.GetUsersByCendisUseCase{Repo: userRepo}
+	createUserUC := &userApp.CreateUserUseCase{Repo: userRepo}
+	updateUserUC := &userApp.UpdateUserUseCase{Repo: userRepo}
+	deleteUserUC := &userApp.DeleteUserUseCase{Repo: userRepo}
+	getAllUserUC := &userApp.GetAllUsersUseCase{Repo: userRepo}
+	getByRolUserUC := &userApp.GetUsersByRolUseCase{Repo: userRepo}
+	getByIdUserUC := &userApp.GetUserByIDUseCase{Repo: userRepo}
+	getByAreaUserUC := &userApp.GetUsersByAreaUseCase{Repo: userRepo}
+	getByCendisUserUC := &userApp.GetUsersByCendisUseCase{Repo: userRepo}
 
-	// Controlador con todos los casos de uso
 	userController := userInfra.NewUserController(
-		createUC,
-		updateUC,
-		deleteUC,
-		getAllUC,
-		getByRolUC,
-		getByIdUC,
-		getByAreaUC,
-		getByCendisUC,
+		createUserUC,
+		updateUserUC,
+		deleteUserUC,
+		getAllUserUC,
+		getByRolUserUC,
+		getByIdUserUC,
+		getByAreaUserUC,
+		getByCendisUserUC,
 	)
 
-	// Rutas
 	http.HandleFunc("/users/create", userController.CreateUserHandler)          // POST
 	http.HandleFunc("/users/update", userController.UpdateUserHandler)          // PUT
 	http.HandleFunc("/users/delete", userController.DeleteUserHandler)          // DELETE
@@ -45,4 +44,32 @@ func RegisterRoutes(db *sql.DB) {
 	http.HandleFunc("/users/by-cendis", userController.GetUsersByCendisHandler) // POST
 
 	log.Println("✅ Rutas de usuarios registradas")
+
+	camaRepo := &camasInfra.CamaRepository{DB: db}
+
+	createCamaUC := &camasApp.CreateCama{Repo: camaRepo}
+	updateCamaUC := &camasApp.UpdateCama{Repo: camaRepo}
+	deleteCamaUC := &camasApp.DeleteCama{Repo: camaRepo}
+	getByAreaCamaUC := &camasApp.GetCamasByArea{Repo: camaRepo}
+	enableCamaUC := &camasApp.EnableCama{Repo: camaRepo}
+	disableCamaUC := &camasApp.DisableCama{Repo: camaRepo}
+
+	camaController := camasInfra.NewCamaController(
+		createCamaUC,
+		updateCamaUC,
+		deleteCamaUC,
+		getByAreaCamaUC,
+		enableCamaUC,
+		disableCamaUC,
+	)
+
+	// Rutas
+	http.HandleFunc("/camas/create", camaController.CreateCamaHandler)      // POST
+	http.HandleFunc("/camas/update", camaController.UpdateCamaHandler)      // PUT
+	http.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)      // DELETE
+	http.HandleFunc("/camas/by-area", camaController.GetCamasByAreaHandler) // POST
+	http.HandleFunc("/camas/enable", camaController.EnableCamaHandler)      // PUT
+	http.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
+
+	log.Println("✅ Rutas de camas registradas")
 }
