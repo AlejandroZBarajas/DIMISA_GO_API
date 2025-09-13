@@ -14,6 +14,8 @@ type UserRepository struct {
 }
 
 func (r *UserRepository) CreateUser(user *usersEntities.UserEntity) error {
+	fmt.Printf("Password recibida: '%s'\n", user.Password)
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error al hashear la contraseña: %v", err)
@@ -25,7 +27,6 @@ func (r *UserRepository) CreateUser(user *usersEntities.UserEntity) error {
 }
 
 func (r *UserRepository) UpdateUser(user *usersEntities.UserEntity) error {
-	// Si el campo Password viene vacío, no actualizamos la contraseña
 	if user.Password == "" {
 		query := `UPDATE usuarios 
 		          SET nombres = ?, apellido1 = ?, apellido2 = ?, username = ?, id_rol = ? 
@@ -34,7 +35,6 @@ func (r *UserRepository) UpdateUser(user *usersEntities.UserEntity) error {
 		return err
 	}
 
-	// Si viene la contraseña, la hasheamos y actualizamos todo
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error al hashear la contraseña: %v", err)

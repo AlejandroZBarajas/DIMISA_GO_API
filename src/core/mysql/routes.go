@@ -5,6 +5,7 @@ import (
 	"DIMISA/src/areas/areasInfra"
 	"DIMISA/src/camas/camasApp"
 	"DIMISA/src/camas/camasInfra"
+	"DIMISA/src/core/auth"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
 	"database/sql"
@@ -13,6 +14,10 @@ import (
 )
 
 func RegisterRoutes(db *sql.DB) {
+
+	loginHandler := &auth.LoginHandler{DB: db}
+	http.Handle("/login", loginHandler)
+	log.Println("✅ Ruta de login registrada")
 
 	userRepo := &userInfra.UserRepository{DB: db}
 

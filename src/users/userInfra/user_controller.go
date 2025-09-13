@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserController struct {
@@ -63,22 +61,16 @@ func (c *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error al hashear la contraseña: %v", err), http.StatusInternalServerError)
-		return
-	}
-
 	user := &usersEntities.UserEntity{
 		Nombres:   input.Nombres,
 		Apellido1: input.Apellido1,
 		Apellido2: input.Apellido2,
 		Username:  input.Username,
-		Password:  string(hashedPassword),
+		Password:  input.Password,
 		Id_rol:    input.Id_rol,
 	}
 
-	err = c.CreateUseCase.Execute(user)
+	err := c.CreateUseCase.Execute(user)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al crear usuario: %v", err), http.StatusInternalServerError)
 		return
