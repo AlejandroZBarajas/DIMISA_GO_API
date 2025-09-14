@@ -13,42 +13,49 @@ import (
 	"net/http"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 func RegisterRoutes(db *sql.DB) {
 
+	mux := http.NewServeMux()
+
 	loginHandler := &auth.LoginHandler{DB: db}
-	http.Handle("/login", loginHandler)
+	mux.Handle("/login", loginHandler)
 	log.Println("✅ Ruta de login registrada")
 
 	userRepo := &userInfra.UserRepository{DB: db}
 
-	createUserUC := &userApp.CreateUserUseCase{Repo: userRepo}
-	updateUserUC := &userApp.UpdateUserUseCase{Repo: userRepo}
-	deleteUserUC := &userApp.DeleteUserUseCase{Repo: userRepo}
-	getAllUserUC := &userApp.GetAllUsersUseCase{Repo: userRepo}
-	getByRolUserUC := &userApp.GetUsersByRolUseCase{Repo: userRepo}
-	getByIdUserUC := &userApp.GetUserByIDUseCase{Repo: userRepo}
-	getByAreaUserUC := &userApp.GetUsersByAreaUseCase{Repo: userRepo}
-	getByCendisUserUC := &userApp.GetUsersByCendisUseCase{Repo: userRepo}
-
 	userController := userInfra.NewUserController(
-		createUserUC,
-		updateUserUC,
-		deleteUserUC,
-		getAllUserUC,
-		getByRolUserUC,
-		getByIdUserUC,
-		getByAreaUserUC,
-		getByCendisUserUC,
+		&userApp.CreateUserUseCase{Repo: userRepo},
+		&userApp.UpdateUserUseCase{Repo: userRepo},
+		&userApp.DeleteUserUseCase{Repo: userRepo},
+		&userApp.GetAllUsersUseCase{Repo: userRepo},
+		&userApp.GetUsersByRolUseCase{Repo: userRepo},
+		&userApp.GetUserByIDUseCase{Repo: userRepo},
+		&userApp.GetUsersByAreaUseCase{Repo: userRepo},
+		&userApp.GetUsersByCendisUseCase{Repo: userRepo},
 	)
 
-	http.HandleFunc("/users/create", userController.CreateUserHandler)          // POST
-	http.HandleFunc("/users/update", userController.UpdateUserHandler)          // PUT
-	http.HandleFunc("/users/delete", userController.DeleteUserHandler)          // DELETE
-	http.HandleFunc("/users/all", userController.GetAllUsersHandler)            // POST (según tu regla)
-	http.HandleFunc("/users/by-rol", userController.GetUsersByRolHandler)       // POST
-	http.HandleFunc("/users/by-id", userController.GetUserByIDHandler)          // POST
-	http.HandleFunc("/users/by-area", userController.GetUsersByAreaHandler)     // POST
-	http.HandleFunc("/users/by-cendis", userController.GetUsersByCendisHandler) // POST
+	mux.HandleFunc("/users/create", userController.CreateUserHandler)          // POST
+	mux.HandleFunc("/users/update", userController.UpdateUserHandler)          // PUT
+	mux.HandleFunc("/users/delete", userController.DeleteUserHandler)          // DELETE
+	mux.HandleFunc("/users/all", userController.GetAllUsersHandler)            // POST
+	mux.HandleFunc("/users/by-rol", userController.GetUsersByRolHandler)       // POST
+	mux.HandleFunc("/users/by-id", userController.GetUserByIDHandler)          // POST
+	mux.HandleFunc("/users/by-area", userController.GetUsersByAreaHandler)     // POST
+	mux.HandleFunc("/users/by-cendis", userController.GetUsersByCendisHandler) // POST
 
 	log.Println("✅ Rutas de usuarios registradas")
 
@@ -106,4 +113,9 @@ func RegisterRoutes(db *sql.DB) {
 	http.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
 
 	log.Println("✅ Rutas de áreas registradas")
+
+	handlerWithCors := corsMiddleware(mux)
+
+	log.Println("🚀 Servidor escuchando en :8080")
+	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 }
