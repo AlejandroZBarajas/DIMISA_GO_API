@@ -78,12 +78,12 @@ func RegisterRoutes(db *sql.DB) {
 	)
 
 	// Rutas
-	http.HandleFunc("/camas/create", camaController.CreateCamaHandler)      // POST
-	http.HandleFunc("/camas/update", camaController.UpdateCamaHandler)      // PUT
-	http.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)      // DELETE
-	http.HandleFunc("/camas/by-area", camaController.GetCamasByAreaHandler) // POST
-	http.HandleFunc("/camas/enable", camaController.EnableCamaHandler)      // PUT
-	http.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
+	mux.HandleFunc("/camas/create", camaController.CreateCamaHandler)      // POST
+	mux.HandleFunc("/camas/update", camaController.UpdateCamaHandler)      // PUT
+	mux.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)      // DELETE
+	mux.HandleFunc("/camas/by-area", camaController.GetCamasByAreaHandler) // POST
+	mux.HandleFunc("/camas/enable", camaController.EnableCamaHandler)      // PUT
+	mux.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
 
 	log.Println("✅ Rutas de camas registradas")
 
@@ -106,11 +106,11 @@ func RegisterRoutes(db *sql.DB) {
 		deleteAreaUC,
 	)
 
-	http.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
-	http.HandleFunc("/areas/update", areaController.UpdateAreaHandler) // PUT
-	http.HandleFunc("/areas/delete", areaController.DeleteAreaHandler) // DELETE
-	http.HandleFunc("/areas/all", areaController.GetAllAreasHandler)   // POST
-	http.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
+	mux.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
+	mux.HandleFunc("/areas/update", areaController.UpdateAreaHandler) // PUT
+	mux.HandleFunc("/areas/delete", areaController.DeleteAreaHandler) // DELETE
+	mux.HandleFunc("/areas", areaController.GetAllAreasHandler)       // POST
+	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
 
 	log.Println("✅ Rutas de áreas registradas")
 
