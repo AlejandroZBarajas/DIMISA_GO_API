@@ -63,12 +63,12 @@ func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error DB: %v", err), http.StatusInternalServerError)
 		return
 	}
-	/*
+	
 		fmt.Printf("Hash desde DB: '%s'\n", hashedPassword)
 		fmt.Printf("Password recibida: '%s'\n", req.Password)
 		errCmp := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password))
 		fmt.Printf("Resultado bcrypt: %v\n", errCmp)
-	*/
+	
 
 	if bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)) != nil {
 		http.Error(w, "Credenciales incorrectas", http.StatusUnauthorized)

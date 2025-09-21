@@ -44,7 +44,7 @@ func (r *AreasRepository) GetAllAreas() ([]*areaEntity.AreaEntity, error) {
 	}
 	defer rows.Close()
 
-	var areas []*areaEntity.AreaEntity
+	areas := []*areaEntity.AreaEntity{}
 	for rows.Next() {
 		area := &areaEntity.AreaEntity{}
 		if err := rows.Scan(&area.Id_area, &area.Nombre_area, &area.Cama_1, &area.Cama_n); err != nil {

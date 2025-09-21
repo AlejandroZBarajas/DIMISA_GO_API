@@ -49,31 +49,45 @@ func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity,
 	}
 	defer rows.Close()
 
-	var camas []*camaEntity.CamaEntity
+	camas := []*camaEntity.CamaEntity{}
 	for rows.Next() {
 		var c camaEntity.CamaEntity
+		var nombres, apellido1, apellido2, fecha_nac, expediente, riesgo_caida, riesgo_ulcera sql.NullString
 		var habilitadaInt int
+
 		err := rows.Scan(
 			&c.Id_cama,
 			&c.Id_area,
 			&c.Numero_cama,
-			&c.Nombres,
-			&c.Apellido1,
-			&c.Apellido2,
-			&c.Fecha_nac,
-			&c.Expediente,
-			&c.Riesgo_caida,
-			&c.Riesgo_ulcera,
+			&nombres,
+			&apellido1,
+			&apellido2,
+			&fecha_nac,
+			&expediente,
+			&riesgo_caida,
+			&riesgo_ulcera,
 			&habilitadaInt,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Asignar valores, reemplazando NULL por cadena vacía
+		c.Nombres = nombres.String
+		c.Apellido1 = apellido1.String
+		c.Apellido2 = apellido2.String
+		c.Fecha_nac = fecha_nac.String
+		c.Expediente = expediente.String
+		c.Riesgo_caida = riesgo_caida.String
+		c.Riesgo_ulcera = riesgo_ulcera.String
 		c.Habilitada = habilitadaInt != 0
+
 		camas = append(camas, &c)
 	}
+
 	return camas, nil
 }
+
 
 func (r *CamaRepository) EnableCama(id int32) error {
 	query := `UPDATE camas SET habilitada = 1 WHERE id_cama = ?`
