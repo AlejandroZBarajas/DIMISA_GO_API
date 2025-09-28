@@ -1,7 +1,6 @@
 package areasInfra
 
 import (
-	"DIMISA/src/areas/areasDomain"
 	"DIMISA/src/areas/areasDomain/areaEntity"
 	"database/sql"
 	"fmt"
@@ -79,4 +78,30 @@ func (r *AreasRepository) DeleteArea(id int32) error {
 	return nil
 }
 
-var _ areasDomain.AreasInterface = &AreasRepository{}
+// var _ areasDomain.AreasInterface = &AreasRepository{}
+
+func (r *AreasRepository) GetFreeAreas() ([]*areaEntity.AreaEntity, error) {
+	query := `
+		SELECT a.id_area, a.nombre_area
+		FROM areas a
+		LEFT JOIN areas_cendis ac ON a.id_area = ac.id_area
+		WHERE ac.id_area IS NULL
+	`
+
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener áreas libres: %w", err)
+	}
+	defer rows.Close()
+
+	var areas []*areaEntity.AreaEntity
+	for rows.Next() {
+		area := &areaEntity.AreaEntity{}
+		if err := rows.Scan(&area.Id_area, &area.Nombre_area); err != nil {
+			return nil, fmt.Errorf("error al escanear área libre: %w", err)
+		}
+		areas = append(areas, area)
+	}
+
+	return areas, nil
+}

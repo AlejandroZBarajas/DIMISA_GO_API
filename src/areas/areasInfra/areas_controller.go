@@ -13,6 +13,7 @@ type AreasController struct {
 	GetAllUC  *areasApp.GetAllAreasUseCase
 	GetByIDUC *areasApp.GetAreaByIDUseCase
 	DeleteUC  *areasApp.DeleteAreaUseCase
+	GetFreeUC *areasApp.GetFreeAreasUseCase
 }
 
 func NewAreasController(
@@ -21,6 +22,7 @@ func NewAreasController(
 	getAllUC *areasApp.GetAllAreasUseCase,
 	getByIDUC *areasApp.GetAreaByIDUseCase,
 	deleteUC *areasApp.DeleteAreaUseCase,
+	getFreeUC *areasApp.GetFreeAreasUseCase,
 ) *AreasController {
 	return &AreasController{
 		CreateUC:  createUC,
@@ -28,7 +30,26 @@ func NewAreasController(
 		GetAllUC:  getAllUC,
 		GetByIDUC: getByIDUC,
 		DeleteUC:  deleteUC,
+		GetFreeUC: getFreeUC,
 	}
+}
+
+func (c *AreasController) GetFreeAreasHandler(w http.ResponseWriter, r *http.Request) {
+	areas, err := c.GetFreeUC.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(areas)
+}
+
+func (c *AreasController) GetAllAreasHandler(w http.ResponseWriter, r *http.Request) {
+	areas, err := c.GetAllUC.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(areas)
 }
 
 func (c *AreasController) CreateAreaHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,15 +80,6 @@ func (c *AreasController) UpdateAreaHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	json.NewEncoder(w).Encode(area)
-}
-
-func (c *AreasController) GetAllAreasHandler(w http.ResponseWriter, r *http.Request) {
-	areas, err := c.GetAllUC.Execute()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(areas)
 }
 
 func (c *AreasController) GetAreaByIDHandler(w http.ResponseWriter, r *http.Request) {

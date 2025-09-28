@@ -97,6 +97,7 @@ func RegisterRoutes(db *sql.DB) {
 	getAllAreaUC := &areasApp.GetAllAreasUseCase{Repo: areaRepo}
 	getByIDAreaUC := &areasApp.GetAreaByIDUseCase{Repo: areaRepo}
 	deleteAreaUC := &areasApp.DeleteAreaUseCase{Repo: areaRepo}
+	getFreeAreasUC := &areasApp.GetFreeAreasUseCase{Repo: areaRepo}
 
 	areaController := areasInfra.NewAreasController(
 		createAreaUC,
@@ -104,6 +105,7 @@ func RegisterRoutes(db *sql.DB) {
 		getAllAreaUC,
 		getByIDAreaUC,
 		deleteAreaUC,
+		getFreeAreasUC,
 	)
 
 	mux.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
@@ -111,7 +113,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/areas/delete", areaController.DeleteAreaHandler) // DELETE
 	mux.HandleFunc("/areas", areaController.GetAllAreasHandler)       // POST
 	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
-
+	mux.HandleFunc("/areas/free", areaController.GetFreeAreasHandler)
 	log.Println("✅ Rutas de áreas registradas")
 
 	handlerWithCors := corsMiddleware(mux)
