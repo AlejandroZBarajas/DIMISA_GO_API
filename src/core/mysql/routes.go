@@ -5,6 +5,8 @@ import (
 	"DIMISA/src/areas/areasInfra"
 	"DIMISA/src/camas/camasApp"
 	"DIMISA/src/camas/camasInfra"
+	"DIMISA/src/cendis/cendisApp"
+	"DIMISA/src/cendis/cendisInfra"
 	"DIMISA/src/core/auth"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
@@ -115,6 +117,28 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
 	mux.HandleFunc("/areas/free", areaController.GetFreeAreasHandler)
 	log.Println("✅ Rutas de áreas registradas")
+
+	// === CENDIS ===
+	cendisRepo := &cendisInfra.CendisRepository{DB: db}
+
+	createCendisUC := &cendisApp.CreateCendisUseCase{Repo: cendisRepo}
+	updateCendisUC := &cendisApp.UpdateCendisUseCase{Repo: cendisRepo}
+	deleteCendisUC := &cendisApp.DeleteCendisUseCase{Repo: cendisRepo}
+	getAllCendisUC := &cendisApp.GetAllCendisUseCase{Repo: cendisRepo}
+
+	cendisController := cendisInfra.NewCendisController(
+		createCendisUC,
+		updateCendisUC,
+		getAllCendisUC,
+		deleteCendisUC,
+	)
+
+	mux.HandleFunc("/cendis/create", cendisController.CreateCendisHandler) // POST
+	mux.HandleFunc("/cendis/update", cendisController.UpdateCendisHandler) // PUT
+	mux.HandleFunc("/cendis/delete", cendisController.DeleteCendisHandler) // DELETE
+	mux.HandleFunc("/cendis/all", cendisController.GetAllCendisHandler)    // POST
+
+	log.Println("✅ Rutas de cendis registradas")
 
 	handlerWithCors := corsMiddleware(mux)
 
