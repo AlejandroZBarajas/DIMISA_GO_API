@@ -9,12 +9,13 @@ import (
 )
 
 type CamaController struct {
-	CreateUC    *camasApp.CreateCama
-	UpdateUC    *camasApp.UpdateCama
-	DeleteUC    *camasApp.DeleteCama
-	GetByAreaUC *camasApp.GetCamasByArea
-	EnableUC    *camasApp.EnableCama
-	DisableUC   *camasApp.DisableCama
+	CreateUC      *camasApp.CreateCama
+	UpdateUC      *camasApp.UpdateCama
+	DeleteUC      *camasApp.DeleteCama
+	GetByAreaUC   *camasApp.GetCamasByArea
+	EnableUC      *camasApp.EnableCama
+	DisableUC     *camasApp.DisableCama
+	CreateRangeUC *camasApp.CreateCamasRange
 }
 
 func NewCamaController(
@@ -24,15 +25,46 @@ func NewCamaController(
 	getByArea *camasApp.GetCamasByArea,
 	enable *camasApp.EnableCama,
 	disable *camasApp.DisableCama,
+	createRange *camasApp.CreateCamasRange,
+
 ) *CamaController {
 	return &CamaController{
-		CreateUC:    create,
-		UpdateUC:    update,
-		DeleteUC:    deleteCama,
-		GetByAreaUC: getByArea,
-		EnableUC:    enable,
-		DisableUC:   disable,
+		CreateUC:      create,
+		UpdateUC:      update,
+		DeleteUC:      deleteCama,
+		GetByAreaUC:   getByArea,
+		EnableUC:      enable,
+		DisableUC:     disable,
+		CreateRangeUC: createRange,
 	}
+}
+
+func (c *CamaController) CreateCamasRangeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var input struct {
+		Id_area int32 `json:"id_area"`
+		Cama_1  int32 `json:"cama_1"`
+		Cama_n  int32 `json:"cama_n"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, fmt.Sprintf("Error al leer datos: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Crear el use case para rango
+	usecase := &camasApp.CreateCamasRange{Repo: c.CreateUC.Repo} // asumimos que Repo es accesible
+	if err := usecase.Execute(input.Id_area, input.Cama_1, input.Cama_n); err != nil {
+		http.Error(w, fmt.Sprintf("Error al crear camas: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Camas creadas correctamente"))
 }
 
 func (c *CamaController) CreateCamaHandler(w http.ResponseWriter, r *http.Request) {

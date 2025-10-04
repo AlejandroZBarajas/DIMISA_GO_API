@@ -11,8 +11,8 @@ type AreasRepository struct {
 }
 
 func (r *AreasRepository) CreateArea(area *areaEntity.AreaEntity) error {
-	query := "INSERT INTO areas (nombre_area, cama_1, cama_n) VALUES (?, ?, ?)"
-	res, err := r.DB.Exec(query, area.Nombre_area, area.Cama_1, area.Cama_n)
+	query := "INSERT INTO areas (nombre_area, alias) VALUES (?, ?)"
+	res, err := r.DB.Exec(query, area.Nombre_area, area.Alias)
 	if err != nil {
 		return fmt.Errorf("error al crear área: %w", err)
 	}
@@ -27,8 +27,8 @@ func (r *AreasRepository) CreateArea(area *areaEntity.AreaEntity) error {
 }
 
 func (r *AreasRepository) UpdateArea(area *areaEntity.AreaEntity) error {
-	query := "UPDATE areas SET nombre_area = ?, cama_1 = ?, cama_n = ? WHERE id_area = ?"
-	_, err := r.DB.Exec(query, area.Nombre_area, area.Cama_1, area.Cama_n, area.Id_area)
+	query := "UPDATE areas SET nombre_area = ?, alias = ? WHERE id_area = ?"
+	_, err := r.DB.Exec(query, area.Nombre_area, area.Alias, area.Id_area)
 	if err != nil {
 		return fmt.Errorf("error al actualizar área: %w", err)
 	}
@@ -36,7 +36,7 @@ func (r *AreasRepository) UpdateArea(area *areaEntity.AreaEntity) error {
 }
 
 func (r *AreasRepository) GetAllAreas() ([]*areaEntity.AreaEntity, error) {
-	query := "SELECT id_area, nombre_area, cama_1, cama_n FROM areas"
+	query := "SELECT id_area, nombre_area, alias FROM areas"
 	rows, err := r.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener todas las áreas: %w", err)
@@ -46,7 +46,7 @@ func (r *AreasRepository) GetAllAreas() ([]*areaEntity.AreaEntity, error) {
 	areas := []*areaEntity.AreaEntity{}
 	for rows.Next() {
 		area := &areaEntity.AreaEntity{}
-		if err := rows.Scan(&area.Id_area, &area.Nombre_area, &area.Cama_1, &area.Cama_n); err != nil {
+		if err := rows.Scan(&area.Id_area, &area.Nombre_area, &area.Alias); err != nil {
 			return nil, fmt.Errorf("error al escanear área: %w", err)
 		}
 		areas = append(areas, area)
@@ -56,11 +56,11 @@ func (r *AreasRepository) GetAllAreas() ([]*areaEntity.AreaEntity, error) {
 }
 
 func (r *AreasRepository) GetAreaByID(id int32) (*areaEntity.AreaEntity, error) {
-	query := "SELECT id_area, nombre_area, cama_1, cama_n FROM areas WHERE id_area = ?"
+	query := "SELECT id_area, nombre_area, alias FROM areas WHERE id_area = ?"
 	row := r.DB.QueryRow(query, id)
 
 	area := &areaEntity.AreaEntity{}
-	if err := row.Scan(&area.Id_area, &area.Nombre_area, &area.Cama_1, &area.Cama_n); err != nil {
+	if err := row.Scan(&area.Id_area, &area.Nombre_area, &area.Alias); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -70,15 +70,18 @@ func (r *AreasRepository) GetAreaByID(id int32) (*areaEntity.AreaEntity, error) 
 }
 
 func (r *AreasRepository) DeleteArea(id int32) error {
-	query := "DELETE FROM areas WHERE id_area = ?"
+	query := "DELETE FROM camas WHERE id_area = ?"
 	_, err := r.DB.Exec(query, id)
 	if err != nil {
-		return fmt.Errorf("error al eliminar área: %w", err)
+		return fmt.Errorf("error en el back al eliminar las camas")
+	}
+	query = "DELETE FROM areas WHERE id_area = ?"
+	_, err = r.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error en el back al eliminar área: %w", err)
 	}
 	return nil
 }
-
-// var _ areasDomain.AreasInterface = &AreasRepository{}
 
 func (r *AreasRepository) GetFreeAreas() ([]*areaEntity.AreaEntity, error) {
 	query := `

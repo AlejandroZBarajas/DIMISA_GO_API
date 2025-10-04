@@ -69,6 +69,7 @@ func RegisterRoutes(db *sql.DB) {
 	getByAreaCamaUC := &camasApp.GetCamasByArea{Repo: camaRepo}
 	enableCamaUC := &camasApp.EnableCama{Repo: camaRepo}
 	disableCamaUC := &camasApp.DisableCama{Repo: camaRepo}
+	createCamasRangeUC := &camasApp.CreateCamasRange{Repo: camaRepo}
 
 	camaController := camasInfra.NewCamaController(
 		createCamaUC,
@@ -77,6 +78,7 @@ func RegisterRoutes(db *sql.DB) {
 		getByAreaCamaUC,
 		enableCamaUC,
 		disableCamaUC,
+		createCamasRangeUC,
 	)
 
 	// Rutas
@@ -86,6 +88,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/camas/by-area", camaController.GetCamasByAreaHandler) // POST
 	mux.HandleFunc("/camas/enable", camaController.EnableCamaHandler)      // PUT
 	mux.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
+	mux.HandleFunc("/camas/range", camaController.CreateCamasRangeHandler) //POST
 
 	log.Println("✅ Rutas de camas registradas")
 

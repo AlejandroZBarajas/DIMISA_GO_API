@@ -46,7 +46,6 @@ func (r *CendisRepository) UpdateCendis(cendis *cendisEntity.CendisEntity, areas
 		return err
 	}
 
-	// Actualizar datos del cendis
 	_, err = tx.Exec(`UPDATE cendis SET cendis_nombre = ? WHERE id_cendis = ?`,
 		cendis.Cendis_nombre, cendis.Id_cendis)
 	if err != nil {
@@ -54,14 +53,12 @@ func (r *CendisRepository) UpdateCendis(cendis *cendisEntity.CendisEntity, areas
 		return err
 	}
 
-	// Borrar asociaciones previas
 	_, err = tx.Exec(`DELETE FROM areas_cendis WHERE id_cendis = ?`, cendis.Id_cendis)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Insertar nuevas asociaciones
 	for _, areaID := range areas {
 		_, err = tx.Exec(`INSERT INTO areas_cendis (id_cendis, id_area) VALUES (?, ?)`,
 			cendis.Id_cendis, areaID)
@@ -71,7 +68,6 @@ func (r *CendisRepository) UpdateCendis(cendis *cendisEntity.CendisEntity, areas
 		}
 	}
 
-	// Confirmar la transacción
 	return tx.Commit()
 }
 

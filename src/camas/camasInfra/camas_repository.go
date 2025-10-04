@@ -10,12 +10,11 @@ type CamaRepository struct {
 }
 
 func (r *CamaRepository) CreateCama(cama *camaEntity.CamaEntity) error {
-	query := `INSERT INTO camas (id_area, numero_cama, habilitada)
-	          VALUES (?, ?, ?)`
+	query := `INSERT INTO camas (id_area, numero_cama)
+	          VALUES (?, ?)`
 	_, err := r.DB.Exec(query,
 		cama.Id_area,
 		cama.Numero_cama,
-		cama.Habilitada,
 	)
 	return err
 }
@@ -87,7 +86,6 @@ func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity,
 
 	return camas, nil
 }
-
 
 func (r *CamaRepository) EnableCama(id int32) error {
 	query := `UPDATE camas SET habilitada = 1 WHERE id_cama = ?`
