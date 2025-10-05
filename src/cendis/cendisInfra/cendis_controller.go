@@ -5,7 +5,6 @@ import (
 	cendisEntity "DIMISA/src/cendis/cendisDomain/entity"
 	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
 type CendisController struct {
@@ -30,8 +29,8 @@ func NewCendisController(
 }
 
 type CreateCendisRequest struct {
-	CendisNombre string  `json:"cendis_nombre"`
-	Areas        []int32 `json:"areas"`
+	Cendis_nombre string  `json:"cendis_nombre"`
+	Areas         []int32 `json:"areas"`
 }
 
 func (c *CendisController) CreateCendisHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +46,7 @@ func (c *CendisController) CreateCendisHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	cendis := &cendisEntity.CendisEntity{
-		Cendis_nombre: req.CendisNombre,
+		Cendis_nombre: req.Cendis_nombre,
 	}
 
 	err := c.CreateUC.Repo.(*CendisRepository).CreateCendis(cendis, req.Areas)
@@ -112,14 +111,21 @@ func (c *CendisController) GetAllCendisHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (c *CendisController) DeleteCendisHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
+	var payload struct {
+		IDCendis int32 `json:"id_cendis"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Error al decodificar el cuerpo de la solicitud", http.StatusBadRequest)
+		return
+	}
+
+	if payload.IDCendis == 0 {
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
 
-	if err := c.DeleteUC.Execute(int32(id)); err != nil {
+	if err := c.DeleteUC.Execute(payload.IDCendis); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

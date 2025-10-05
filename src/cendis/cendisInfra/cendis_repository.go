@@ -79,6 +79,7 @@ func (r *CendisRepository) GetAllCendis() ([]*cendisEntity.CendisEntity, error) 
 	defer rows.Close()
 
 	cendisList := []*cendisEntity.CendisEntity{}
+
 	for rows.Next() {
 		cendis := &cendisEntity.CendisEntity{}
 		if err := rows.Scan(&cendis.Id_cendis, &cendis.Cendis_nombre); err != nil {
@@ -91,13 +92,13 @@ func (r *CendisRepository) GetAllCendis() ([]*cendisEntity.CendisEntity, error) 
 }
 
 func (r *CendisRepository) DeleteCendis(id int32) error {
-	// eliminar relaciones primero
+	println("primero se eliminan relaciones del cendis")
 	_, err := r.DB.Exec("DELETE FROM areas_cendis WHERE id_cendis = ?", id)
 	if err != nil {
 		return fmt.Errorf("error al eliminar relaciones del cendis: %w", err)
 	}
 
-	// eliminar cendis
+	println("y luego se elimina el cendis")
 	_, err = r.DB.Exec("DELETE FROM cendis WHERE id_cendis = ?", id)
 	if err != nil {
 		return fmt.Errorf("error al eliminar cendis: %w", err)

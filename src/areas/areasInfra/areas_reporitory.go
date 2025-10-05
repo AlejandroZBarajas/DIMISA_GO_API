@@ -30,7 +30,7 @@ func (r *AreasRepository) UpdateArea(area *areaEntity.AreaEntity) error {
 	query := "UPDATE areas SET nombre_area = ?, alias = ? WHERE id_area = ?"
 	_, err := r.DB.Exec(query, area.Nombre_area, area.Alias, area.Id_area)
 	if err != nil {
-		return fmt.Errorf("error al actualizar área: %w", err)
+		return fmt.Errorf("error API al actualizar área: %w", err)
 	}
 	return nil
 }
@@ -75,6 +75,12 @@ func (r *AreasRepository) DeleteArea(id int32) error {
 	if err != nil {
 		return fmt.Errorf("error en el back al eliminar las camas")
 	}
+	query = "DELETE FROM areas_cendis WHERE id_area = ?"
+	_, err = r.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error al eliminar el area de areas_cendis: %w", err)
+	}
+
 	query = "DELETE FROM areas WHERE id_area = ?"
 	_, err = r.DB.Exec(query, id)
 	if err != nil {
@@ -85,7 +91,7 @@ func (r *AreasRepository) DeleteArea(id int32) error {
 
 func (r *AreasRepository) GetFreeAreas() ([]*areaEntity.AreaEntity, error) {
 	query := `
-		SELECT a.id_area, a.nombre_area
+		SELECT a.id_area, a.nombre_area, a.alias
 		FROM areas a
 		LEFT JOIN areas_cendis ac ON a.id_area = ac.id_area
 		WHERE ac.id_area IS NULL
@@ -100,7 +106,7 @@ func (r *AreasRepository) GetFreeAreas() ([]*areaEntity.AreaEntity, error) {
 	var areas []*areaEntity.AreaEntity
 	for rows.Next() {
 		area := &areaEntity.AreaEntity{}
-		if err := rows.Scan(&area.Id_area, &area.Nombre_area); err != nil {
+		if err := rows.Scan(&area.Id_area, &area.Nombre_area, &area.Alias); err != nil {
 			return nil, fmt.Errorf("error al escanear área libre: %w", err)
 		}
 		areas = append(areas, area)
