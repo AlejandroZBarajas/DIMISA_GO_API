@@ -1,6 +1,7 @@
 package cendisInfra
 
 import (
+	areaEntity "DIMISA/src/areas/areasDomain/areaEntity"
 	"DIMISA/src/cendis/cendisDomain"
 	cendisEntity "DIMISA/src/cendis/cendisDomain/entity"
 	"database/sql"
@@ -71,26 +72,6 @@ func (r *CendisRepository) UpdateCendis(cendis *cendisEntity.CendisEntity, areas
 	return tx.Commit()
 }
 
-func (r *CendisRepository) GetAllCendis() ([]*cendisEntity.CendisEntity, error) {
-	rows, err := r.DB.Query("SELECT id_cendis, cendis_nombre FROM cendis")
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener todos los cendis: %w", err)
-	}
-	defer rows.Close()
-
-	cendisList := []*cendisEntity.CendisEntity{}
-
-	for rows.Next() {
-		cendis := &cendisEntity.CendisEntity{}
-		if err := rows.Scan(&cendis.Id_cendis, &cendis.Cendis_nombre); err != nil {
-			return nil, fmt.Errorf("error al escanear cendis: %w", err)
-		}
-		cendisList = append(cendisList, cendis)
-	}
-
-	return cendisList, nil
-}
-
 func (r *CendisRepository) DeleteCendis(id int32) error {
 	println("primero se eliminan relaciones del cendis")
 	_, err := r.DB.Exec("DELETE FROM areas_cendis WHERE id_cendis = ?", id)
@@ -105,6 +86,72 @@ func (r *CendisRepository) DeleteCendis(id int32) error {
 	}
 
 	return nil
+}
+
+func (r *CendisRepository) GetAllCendis() ([]*cendisEntity.CendisWithAreas, error) {
+	query := `
+		SELECT 
+			c.id_cendis, 
+			c.cendis_nombre,
+			a.id_area,
+			a.nombre_area,
+			a.alias
+		FROM cendis c
+		LEFT JOIN areas_cendis ac ON c.id_cendis = ac.id_cendis
+		LEFT JOIN areas a ON ac.id_area = a.id_area
+		ORDER BY c.id_cendis;
+	`
+
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener cendis con áreas: %w", err)
+	}
+	defer rows.Close()
+
+	cendisMap := make(map[int32]*cendisEntity.CendisWithAreas)
+
+	for rows.Next() {
+		var (
+			idCendis     int32
+			nombreCendis string
+			idArea       sql.NullInt32
+			nombreArea   sql.NullString
+			alias        sql.NullString
+		)
+
+		if err := rows.Scan(&idCendis, &nombreCendis, &idArea, &nombreArea, &alias); err != nil {
+			return nil, fmt.Errorf("error al escanear fila: %w", err)
+		}
+
+		// Si el cendis no está en el mapa, lo agregamos
+		if _, exists := cendisMap[idCendis]; !exists {
+			cendisMap[idCendis] = &cendisEntity.CendisWithAreas{
+				Id_cendis:     idCendis,
+				Cendis_nombre: nombreCendis,
+				Areas:         []areaEntity.AreaEntity{},
+			}
+		}
+
+		// Si el área no es nula, la agregamos
+		if idArea.Valid {
+			cendisMap[idCendis].Areas = append(
+				cendisMap[idCendis].Areas,
+				areaEntity.AreaEntity{
+					Id_area:     idArea.Int32,
+					Nombre_area: nombreArea.String,
+					Alias:       alias.String,
+				},
+			)
+		}
+	}
+
+	// Convertir el mapa a slice
+	cendisList := make([]*cendisEntity.CendisWithAreas, 0, len(cendisMap))
+	for _, c := range cendisMap {
+		cendisList = append(cendisList, c)
+	}
+
+	return cendisList, nil
 }
 
 var _ cendisDomain.CendisInterface = &CendisRepository{}

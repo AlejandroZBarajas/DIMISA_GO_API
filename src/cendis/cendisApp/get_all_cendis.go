@@ -9,6 +9,6 @@ type GetAllCendisUseCase struct {
 	Repo cendisDomain.CendisInterface
 }
 
-func (uc *GetAllCendisUseCase) Execute() ([]*cendisEntity.CendisEntity, error) {
+func (uc *GetAllCendisUseCase) Execute() ([]*cendisEntity.CendisWithAreas, error) {
 	return uc.Repo.GetAllCendis()
 }

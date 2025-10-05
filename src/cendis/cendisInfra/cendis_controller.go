@@ -60,7 +60,6 @@ func (c *CendisController) CreateCendisHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (c *CendisController) UpdateCendisHandler(w http.ResponseWriter, r *http.Request) {
-	// Estructura para recibir el body completo
 	var payload struct {
 		Id_cendis     int32   `json:"id_cendis"`
 		Cendis_nombre string  `json:"cendis_nombre"`
@@ -72,13 +71,11 @@ func (c *CendisController) UpdateCendisHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Validar que al menos haya un área
 	if len(payload.Areas) == 0 {
 		http.Error(w, "Debe asociar al menos un área al cendis", http.StatusBadRequest)
 		return
 	}
 
-	// Construir la entidad
 	cendis := cendisEntity.CendisEntity{
 		Id_cendis:     payload.Id_cendis,
 		Cendis_nombre: payload.Cendis_nombre,

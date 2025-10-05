@@ -7,6 +7,6 @@ import (
 type CendisInterface interface {
 	CreateCendis(cendis *cendisEntity.CendisEntity, areas []int32) error
 	UpdateCendis(cendis *cendisEntity.CendisEntity, areas []int32) error
-	GetAllCendis() ([]*cendisEntity.CendisEntity, error)
+	GetAllCendis() ([]*cendisEntity.CendisWithAreas, error)
 	DeleteCendis(id int32) error
 }
