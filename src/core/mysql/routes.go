@@ -53,7 +53,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/users/create", userController.CreateUserHandler)          // POST
 	mux.HandleFunc("/users/update", userController.UpdateUserHandler)          // PUT
 	mux.HandleFunc("/users/delete", userController.DeleteUserHandler)          // DELETE
-	mux.HandleFunc("/users/all", userController.GetAllUsersHandler)            // POST
+	mux.HandleFunc("/users/all", userController.GetAllUsersHandler)            // GET
 	mux.HandleFunc("/users/by-rol", userController.GetUsersByRolHandler)       // POST
 	mux.HandleFunc("/users/by-id", userController.GetUserByIDHandler)          // POST
 	mux.HandleFunc("/users/by-area", userController.GetUsersByAreaHandler)     // POST

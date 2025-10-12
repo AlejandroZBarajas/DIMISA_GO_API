@@ -3,7 +3,11 @@ package userDomain
 import "DIMISA/src/users/userDomain/usersEntities"
 
 type UserInterface interface {
-	CreateUser(user *usersEntities.UserEntity) error
+	CreateUser(user *usersEntities.UserEntity) (id int32, err error)
+
+	CreateUserCendis(idUser, idCendis int32) error
+
+	CreateUserEnfermeria(idUser, idArea int32) error
 
 	UpdateUser(user *usersEntities.UserEntity) error
 

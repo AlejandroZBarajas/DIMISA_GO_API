@@ -6,24 +6,32 @@ import (
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
-	//"DIMISA/src/users/userDomain"
 )
 
 type UserRepository struct {
 	DB *sql.DB
 }
 
-func (r *UserRepository) CreateUser(user *usersEntities.UserEntity) error {
-	fmt.Printf("Password recibida: '%s'\n", user.Password)
-
+func (r *UserRepository) CreateUser(user *usersEntities.UserEntity) (int32, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("error al hashear la contraseña: %v", err)
+		return 0, fmt.Errorf("error al hashear la contraseña: %v", err)
 	}
-	query := `INSERT INTO usuarios (nombres, apellido1, apellido2, username, password, id_rol) 
+
+	query := `INSERT INTO usuarios (nombres, apellido1, apellido2, username, password, id_rol)
 	          VALUES (?, ?, ?, ?, ?, ?)`
-	_, err = r.DB.Exec(query, user.Nombres, user.Apellido1, user.Apellido2, user.Username, string(hashedPassword), user.Id_rol)
-	return err
+
+	result, err := r.DB.Exec(query, user.Nombres, user.Apellido1, user.Apellido2, user.Username, string(hashedPassword), user.Id_rol)
+	if err != nil {
+		return 0, fmt.Errorf("error al insertar el usuario: %v", err)
+	}
+
+	insertedID, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("error al obtener el ID insertado: %v", err)
+	}
+
+	return int32(insertedID), nil
 }
 
 func (r *UserRepository) UpdateUser(user *usersEntities.UserEntity) error {
@@ -47,9 +55,14 @@ func (r *UserRepository) UpdateUser(user *usersEntities.UserEntity) error {
 	return err
 }
 
+func (r *UserRepository) DeleteUser(id int32) error {
+	query := `DELETE FROM usuarios WHERE id_usuario = ?`
+	_, err := r.DB.Exec(query, id)
+	return err
+}
+
 func (r *UserRepository) GetAll() ([]*usersEntities.UserEntity, error) {
-	query := `SELECT id_usuario, nombres, apellido1, apellido2, username, id_rol 
-	          FROM usuarios`
+	query := `SELECT id_usuario, nombres, apellido1, apellido2, username, id_rol FROM usuarios`
 
 	rows, err := r.DB.Query(query)
 	if err != nil {
@@ -75,6 +88,28 @@ func (r *UserRepository) GetAll() ([]*usersEntities.UserEntity, error) {
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) GetById(id int32) (*usersEntities.UserEntity, error) {
+	query := `SELECT id_usuario, nombres, apellido1, apellido2, username, id_rol FROM usuarios WHERE id_usuario = ?`
+
+	var user usersEntities.UserEntity
+	err := r.DB.QueryRow(query, id).Scan(
+		&user.Id_usuario,
+		&user.Nombres,
+		&user.Apellido1,
+		&user.Apellido2,
+		&user.Username,
+		&user.Id_rol,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (r *UserRepository) GetByRol(rol int32) ([]*usersEntities.UserEntity, error) {
@@ -105,34 +140,6 @@ func (r *UserRepository) GetByRol(rol int32) ([]*usersEntities.UserEntity, error
 	}
 
 	return users, nil
-}
-
-func (r *UserRepository) GetById(id int32) (*usersEntities.UserEntity, error) {
-	query := `SELECT id_usuario, nombres, apellido1, apellido2, username, id_rol 
-	          FROM usuarios WHERE id_usuario = ?`
-
-	var user usersEntities.UserEntity
-	err := r.DB.QueryRow(query, id).Scan(
-		&user.Id_usuario,
-		&user.Nombres,
-		&user.Apellido1,
-		&user.Apellido2,
-		&user.Username,
-		&user.Id_rol,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &user, nil
-}
-func (r *UserRepository) DeleteUser(id int32) error {
-	query := `DELETE FROM usuarios WHERE id_usuario = ?`
-	_, err := r.DB.Exec(query, id)
-	return err
 }
 
 func (r *UserRepository) GetByAreaID(id int32) ([]*usersEntities.UserEnfermeriaEntity, error) {
@@ -195,14 +202,14 @@ func (r *UserRepository) GetByCendisID(id int32) ([]*usersEntities.UserCendisEnt
 	return users, nil
 }
 
-func (r *UserRepository) AsignarTurno(userID, turnoID int32) error {
-	query := `UPDATE usuarios SET turno_id = ? WHERE id_usuario = ?`
-	_, err := r.DB.Exec(query, turnoID, userID)
+func (r *UserRepository) CreateUserEnfermeria(idUser, idArea int32) error {
+	query := `INSERT INTO enfermeria_users (id_user, id_area) VALUES (?, ?)`
+	_, err := r.DB.Exec(query, idUser, idArea)
 	return err
 }
 
-func (r *UserRepository) AsignarArea(userID, areaID int32) error {
-	query := `UPDATE usuarios_enfermeria SET id_area = ? WHERE id_usuario = ?`
-	_, err := r.DB.Exec(query, areaID, userID)
+func (r *UserRepository) CreateUserCendis(idUser, idCendis int32) error {
+	query := `INSERT INTO usuarios_cendis (id_usuario, id_cendis) VALUES (?, ?)`
+	_, err := r.DB.Exec(query, idUser, idCendis)
 	return err
 }

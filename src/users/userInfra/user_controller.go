@@ -54,6 +54,8 @@ func (c *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reques
 		Username  string `json:"username"`
 		Password  string `json:"password"`
 		Id_rol    int32  `json:"id_rol"`
+		Id_area   *int32 `json:"id_area,omitempty"`
+		Id_cendis *int32 `json:"id_cendis,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -70,14 +72,39 @@ func (c *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reques
 		Id_rol:    input.Id_rol,
 	}
 
-	err := c.CreateUseCase.Execute(user)
+	userID, err := c.CreateUseCase.Execute(user)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al crear usuario: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	switch input.Id_rol {
+	case 5:
+		if input.Id_area == nil {
+			http.Error(w, "Id_area es requerido para rol ENFERMERIA", http.StatusBadRequest)
+			return
+		}
+		err = c.CreateUseCase.Repo.CreateUserEnfermeria(userID, *input.Id_area)
+	case 6:
+		if input.Id_cendis == nil {
+			http.Error(w, "Id_cendis es requerido para rol CENDIS", http.StatusBadRequest)
+			return
+		}
+		err = c.CreateUseCase.Repo.CreateUserCendis(userID, *input.Id_cendis)
+	default:
+		err = nil
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al asignar usuario a su tabla: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("Usuario '%s' creado exitosamente", input.Username)))
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id_usuario": userID,
+	})
 }
 
 func (c *UserController) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
