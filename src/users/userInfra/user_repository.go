@@ -231,3 +231,15 @@ func (r *UserRepository) CreateJefeUser(idUser int32) error {
 	_, err := r.DB.Exec(query, idUser)
 	return err
 }
+
+func (r *UserRepository) RemoveUserFromAllRoleTables(userID int32) error {
+	tables := []string{"admin_users", "jefes_users", "admision_users", "enfermeria_users", "unidosis_users"}
+
+	for _, table := range tables {
+		query := fmt.Sprintf("DELETE FROM %s WHERE id_user = ?", table)
+		if _, err := r.DB.Exec(query, userID); err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -3,6 +3,8 @@ package userDomain
 import "DIMISA/src/users/userDomain/usersEntities"
 
 type UserInterface interface {
+	RemoveUserFromAllRoleTables(userID int32) error
+
 	CreateUser(user *usersEntities.UserEntity) (id int32, err error)
 
 	CreateUserCendis(idUser, idCendis int32) error
