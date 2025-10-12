@@ -79,6 +79,13 @@ func (c *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	switch input.Id_rol {
+	case 2:
+		err = c.CreateUseCase.Repo.CreateAdminUser(userID)
+	case 3:
+		err = c.CreateUseCase.Repo.CreateJefeUser(userID)
+	case 4:
+		err = c.CreateUseCase.Repo.CreateAdmisionUser(userID)
+
 	case 5:
 		if input.Id_area == nil {
 			http.Error(w, "Id_area es requerido para rol ENFERMERIA", http.StatusBadRequest)

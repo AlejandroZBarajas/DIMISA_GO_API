@@ -209,7 +209,25 @@ func (r *UserRepository) CreateUserEnfermeria(idUser, idArea int32) error {
 }
 
 func (r *UserRepository) CreateUserCendis(idUser, idCendis int32) error {
-	query := `INSERT INTO usuarios_cendis (id_usuario, id_cendis) VALUES (?, ?)`
+	query := `INSERT INTO unidosis_users (id_user, id_cendis) VALUES (?, ?)`
 	_, err := r.DB.Exec(query, idUser, idCendis)
+	return err
+}
+
+func (r *UserRepository) CreateAdminUser(idUser int32) error {
+	query := `INSERT INTO admin_users (id_user) VALUES (?)`
+	_, err := r.DB.Exec(query, idUser)
+	return err
+}
+
+func (r *UserRepository) CreateAdmisionUser(idUser int32) error {
+	query := `INSERT INTO admision_users (id_user) VALUES (?)`
+	_, err := r.DB.Exec(query, idUser)
+	return err
+}
+
+func (r *UserRepository) CreateJefeUser(idUser int32) error {
+	query := `INSERT INTO jefes_users (id_user) VALUES (?)`
+	_, err := r.DB.Exec(query, idUser)
 	return err
 }

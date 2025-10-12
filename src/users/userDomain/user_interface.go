@@ -9,6 +9,10 @@ type UserInterface interface {
 
 	CreateUserEnfermeria(idUser, idArea int32) error
 
+	CreateAdminUser(userID int32) error
+	CreateJefeUser(userID int32) error
+	CreateAdmisionUser(userID int32) error
+
 	UpdateUser(user *usersEntities.UserEntity) error
 
 	GetById(id int32) (*usersEntities.UserEntity, error)
