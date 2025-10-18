@@ -9,13 +9,14 @@ import (
 )
 
 type CamaController struct {
-	CreateUC      *camasApp.CreateCama
-	UpdateUC      *camasApp.UpdateCama
-	DeleteUC      *camasApp.DeleteCama
-	GetByAreaUC   *camasApp.GetCamasByArea
-	EnableUC      *camasApp.EnableCama
-	DisableUC     *camasApp.DisableCama
-	CreateRangeUC *camasApp.CreateCamasRange
+	CreateUC        *camasApp.CreateCama
+	UpdateUC        *camasApp.UpdateCama
+	DeleteUC        *camasApp.DeleteCama
+	GetByAreaUC     *camasApp.GetCamasByArea
+	EnableUC        *camasApp.EnableCama
+	DisableUC       *camasApp.DisableCama
+	CreateRangeUC   *camasApp.CreateCamasRange
+	GetFreeByAreaUC *camasApp.GetFreeCamasByArea
 }
 
 func NewCamaController(
@@ -26,16 +27,18 @@ func NewCamaController(
 	enable *camasApp.EnableCama,
 	disable *camasApp.DisableCama,
 	createRange *camasApp.CreateCamasRange,
+	getFreeByArea *camasApp.GetFreeCamasByArea,
 
 ) *CamaController {
 	return &CamaController{
-		CreateUC:      create,
-		UpdateUC:      update,
-		DeleteUC:      deleteCama,
-		GetByAreaUC:   getByArea,
-		EnableUC:      enable,
-		DisableUC:     disable,
-		CreateRangeUC: createRange,
+		CreateUC:        create,
+		UpdateUC:        update,
+		DeleteUC:        deleteCama,
+		GetByAreaUC:     getByArea,
+		EnableUC:        enable,
+		DisableUC:       disable,
+		CreateRangeUC:   createRange,
+		GetFreeByAreaUC: getFreeByArea,
 	}
 }
 
@@ -56,7 +59,6 @@ func (c *CamaController) CreateCamasRangeHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Crear el use case para rango
 	usecase := &camasApp.CreateCamasRange{Repo: c.CreateUC.Repo} // asumimos que Repo es accesible
 	if err := usecase.Execute(input.Id_area, input.Cama_1, input.Cama_n); err != nil {
 		http.Error(w, fmt.Sprintf("Error al crear camas: %v", err), http.StatusInternalServerError)
@@ -195,6 +197,35 @@ func (c *CamaController) GetCamasByAreaHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(camas)
+}
+
+func (c *CamaController) GetFreeCamasByAreaHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 1. Decodificar body
+	var body struct {
+		IdArea int32 `json:"id_area"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Llamar al repository
+	// ✅ Correcto: llamar al UseCase
+	camas, err := c.GetFreeByAreaUC.Execute(body.IdArea)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al obtener camas: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Responder JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(camas)
 }

@@ -9,4 +9,5 @@ type CamaInterface interface {
 	EnableCama(id int32) error
 	DisableCama(id int32) error
 	DeleteCama(id int32) error
+	GetFreeCamasByArea(area int32) ([]*camaEntity.CamaEntity, error)
 }

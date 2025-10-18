@@ -104,3 +104,37 @@ func (r *CamaRepository) DeleteCama(id int32) error {
 	_, err := r.DB.Exec(query, id)
 	return err
 }
+
+func (r *CamaRepository) GetFreeCamasByArea(idArea int32) ([]*camaEntity.CamaEntity, error) {
+	query := `
+		SELECT id_cama, numero_cama
+		FROM camas
+		WHERE id_area = ?
+		AND habilitada = 1
+		AND occupied = 0
+		ORDER BY numero_cama ASC
+	`
+
+	rows, err := r.DB.Query(query, idArea)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var freeCamas []*camaEntity.CamaEntity
+
+	for rows.Next() {
+		var cama camaEntity.CamaEntity
+		err := rows.Scan(&cama.Id_cama, &cama.Numero_cama)
+		if err != nil {
+			return nil, err
+		}
+		freeCamas = append(freeCamas, &cama)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return freeCamas, nil
+}

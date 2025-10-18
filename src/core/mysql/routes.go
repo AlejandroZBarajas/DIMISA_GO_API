@@ -70,6 +70,7 @@ func RegisterRoutes(db *sql.DB) {
 	enableCamaUC := &camasApp.EnableCama{Repo: camaRepo}
 	disableCamaUC := &camasApp.DisableCama{Repo: camaRepo}
 	createCamasRangeUC := &camasApp.CreateCamasRange{Repo: camaRepo}
+	getFreeCamasByAreaUC := &camasApp.GetFreeCamasByArea{Repo: camaRepo}
 
 	camaController := camasInfra.NewCamaController(
 		createCamaUC,
@@ -79,16 +80,18 @@ func RegisterRoutes(db *sql.DB) {
 		enableCamaUC,
 		disableCamaUC,
 		createCamasRangeUC,
+		getFreeCamasByAreaUC,
 	)
 
 	// Rutas
-	mux.HandleFunc("/camas/create", camaController.CreateCamaHandler)      // POST
-	mux.HandleFunc("/camas/update", camaController.UpdateCamaHandler)      // PUT
-	mux.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)      // DELETE
-	mux.HandleFunc("/camas/by-area", camaController.GetCamasByAreaHandler) // POST
-	mux.HandleFunc("/camas/enable", camaController.EnableCamaHandler)      // PUT
-	mux.HandleFunc("/camas/disable", camaController.DisableCamaHandler)    // PUT
-	mux.HandleFunc("/camas/range", camaController.CreateCamasRangeHandler) //POST
+	mux.HandleFunc("/camas/create", camaController.CreateCamaHandler)         // POST
+	mux.HandleFunc("/camas/update", camaController.UpdateCamaHandler)         // PUT
+	mux.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)         // DELETE
+	mux.HandleFunc("/camas/ar", camaController.GetCamasByAreaHandler)         // POST
+	mux.HandleFunc("/camas/enable", camaController.EnableCamaHandler)         // PUT
+	mux.HandleFunc("/camas/disable", camaController.DisableCamaHandler)       // PUT
+	mux.HandleFunc("/camas/range", camaController.CreateCamasRangeHandler)    //POST
+	mux.HandleFunc("/camas/frbyar", camaController.GetFreeCamasByAreaHandler) //POST
 
 	log.Println("✅ Rutas de camas registradas")
 
