@@ -12,4 +12,5 @@ type CamaEntity struct {
 	Riesgo_caida  string `json:"riesgo_caida"`
 	Riesgo_ulcera string `json:"riesgo_ulcera"`
 	Habilitada    bool   `json:"habilitada"`
+	Occupied      bool   `json:"occupied"`
 }

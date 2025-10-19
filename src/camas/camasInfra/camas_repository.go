@@ -21,7 +21,7 @@ func (r *CamaRepository) CreateCama(cama *camaEntity.CamaEntity) error {
 
 func (r *CamaRepository) UpdateCama(cama *camaEntity.CamaEntity) error {
 	query := `UPDATE camas SET 
-	          id_area = ?, numero_cama = ?, nombres = ?, apellido1 = ?, apellido2 = ?, fecha_nac = ?, expediente = ?, riesgo_caida = ?, riesgo_ulcera = ?, habilitada = ?
+	          id_area = ?, numero_cama = ?, nombres = ?, apellido1 = ?, apellido2 = ?, fecha_nac = ?, expediente = ?, riesgo_caida = ?, riesgo_ulcera = ?, habilitada = ?, occupied = ?
 	          WHERE id_cama = ?`
 	_, err := r.DB.Exec(query,
 		cama.Id_area,
@@ -34,13 +34,14 @@ func (r *CamaRepository) UpdateCama(cama *camaEntity.CamaEntity) error {
 		cama.Riesgo_caida,
 		cama.Riesgo_ulcera,
 		cama.Habilitada,
+		cama.Occupied,
 		cama.Id_cama,
 	)
 	return err
 }
 
 func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity, error) {
-	query := `SELECT id_cama, id_area, numero_cama, nombres, apellido1, apellido2, fecha_nac, expediente, riesgo_caida, riesgo_ulcera, habilitada
+	query := `SELECT id_cama, id_area, numero_cama, nombres, apellido1, apellido2, fecha_nac, expediente, riesgo_caida, riesgo_ulcera, habilitada, occupied
 	          FROM camas WHERE id_area = ?`
 	rows, err := r.DB.Query(query, areaid)
 	if err != nil {
@@ -52,7 +53,7 @@ func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity,
 	for rows.Next() {
 		var c camaEntity.CamaEntity
 		var nombres, apellido1, apellido2, fecha_nac, expediente, riesgo_caida, riesgo_ulcera sql.NullString
-		var habilitadaInt int
+		var habilitadaInt, occupiedInt int
 
 		err := rows.Scan(
 			&c.Id_cama,
@@ -66,6 +67,7 @@ func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity,
 			&riesgo_caida,
 			&riesgo_ulcera,
 			&habilitadaInt,
+			&occupiedInt,
 		)
 		if err != nil {
 			return nil, err
@@ -80,6 +82,7 @@ func (r *CamaRepository) GetCamasByArea(areaid int32) ([]*camaEntity.CamaEntity,
 		c.Riesgo_caida = riesgo_caida.String
 		c.Riesgo_ulcera = riesgo_ulcera.String
 		c.Habilitada = habilitadaInt != 0
+		c.Occupied = occupiedInt != 0
 
 		camas = append(camas, &c)
 	}
@@ -137,4 +140,23 @@ func (r *CamaRepository) GetFreeCamasByArea(idArea int32) ([]*camaEntity.CamaEnt
 	}
 
 	return freeCamas, nil
+}
+
+func (r *CamaRepository) SetFreeCama(id_cama int32) error {
+	query := `
+	UPDATE camas
+	SET 
+	nombres = NULL,
+	apellido1 = NULL,
+	apellido2 = NULL,
+	fecha_nac = NULL,
+	expediente = NULL,
+	riesgo_caida = NULL,
+	riesgo_ulcera = NULL,
+	occupied = 0,
+	habilitada = 1
+	WHERE id_cama = ?;
+	`
+	_, err := r.DB.Exec(query, id_cama)
+	return err
 }

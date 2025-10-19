@@ -17,6 +17,7 @@ type CamaController struct {
 	DisableUC       *camasApp.DisableCama
 	CreateRangeUC   *camasApp.CreateCamasRange
 	GetFreeByAreaUC *camasApp.GetFreeCamasByArea
+	SetFreeCamaUC   *camasApp.SetFreeCama
 }
 
 func NewCamaController(
@@ -28,6 +29,7 @@ func NewCamaController(
 	disable *camasApp.DisableCama,
 	createRange *camasApp.CreateCamasRange,
 	getFreeByArea *camasApp.GetFreeCamasByArea,
+	setFreeCama *camasApp.SetFreeCama,
 
 ) *CamaController {
 	return &CamaController{
@@ -39,6 +41,7 @@ func NewCamaController(
 		DisableUC:       disable,
 		CreateRangeUC:   createRange,
 		GetFreeByAreaUC: getFreeByArea,
+		SetFreeCamaUC:   setFreeCama,
 	}
 }
 
@@ -97,6 +100,7 @@ func (c *CamaController) UpdateCamaHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	fmt.Println("entra al servicio para editar la cama en el back")
 	var input camaEntity.CamaEntity
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, fmt.Sprintf("Error al leer datos: %v", err), http.StatusBadRequest)
@@ -207,7 +211,6 @@ func (c *CamaController) GetFreeCamasByAreaHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// 1. Decodificar body
 	var body struct {
 		IdArea int32 `json:"id_area"`
 	}
@@ -216,8 +219,6 @@ func (c *CamaController) GetFreeCamasByAreaHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// 2. Llamar al repository
-	// ✅ Correcto: llamar al UseCase
 	camas, err := c.GetFreeByAreaUC.Execute(body.IdArea)
 
 	if err != nil {
@@ -225,7 +226,30 @@ func (c *CamaController) GetFreeCamasByAreaHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// 3. Responder JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(camas)
+}
+
+func (c *CamaController) SetFreeCamaHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		IdCama int32 `json:"id_cama"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+
+	err := c.SetFreeCamaUC.Execute(body.IdCama)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al desocupar cama: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 }
