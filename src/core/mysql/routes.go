@@ -7,6 +7,8 @@ import (
 	"DIMISA/src/camas/camasInfra"
 	"DIMISA/src/cendis/cendisApp"
 	"DIMISA/src/cendis/cendisInfra"
+	"DIMISA/src/claves/clavesApp"
+	"DIMISA/src/claves/clavesInfra"
 	"DIMISA/src/core/auth"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
@@ -129,7 +131,6 @@ func RegisterRoutes(db *sql.DB) {
 
 	// === CENDIS ===
 	cendisRepo := &cendisInfra.CendisRepository{DB: db}
-
 	createCendisUC := &cendisApp.CreateCendisUseCase{Repo: cendisRepo}
 	updateCendisUC := &cendisApp.UpdateCendisUseCase{Repo: cendisRepo}
 	deleteCendisUC := &cendisApp.DeleteCendisUseCase{Repo: cendisRepo}
@@ -148,6 +149,14 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/cendis/all", cendisController.GetAllCendisHandler)    // POST
 
 	log.Println("✅ Rutas de cendis registradas")
+
+	claveRepo := &clavesInfra.ClaveRepository{DB: db}
+	searchClaveUC := &clavesApp.SearchClave{Repo: claveRepo}
+	claveController := clavesInfra.NewClaveController(searchClaveUC)
+
+	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave) // GET
+
+	log.Println("✅ Rutas de medicamentos registradas")
 
 	handlerWithCors := corsMiddleware(mux)
 
