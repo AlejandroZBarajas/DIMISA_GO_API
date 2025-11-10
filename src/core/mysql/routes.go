@@ -9,6 +9,8 @@ import (
 	"DIMISA/src/cendis/cendisInfra"
 	"DIMISA/src/claves/clavesApp"
 	"DIMISA/src/claves/clavesInfra"
+	"DIMISA/src/colectivos/colectivosApp"
+	"DIMISA/src/colectivos/colectivosInfra"
 	"DIMISA/src/core/auth"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
@@ -37,7 +39,7 @@ func RegisterRoutes(db *sql.DB) {
 
 	loginHandler := &auth.LoginHandler{DB: db}
 	mux.Handle("/login", loginHandler)
-	log.Println("✅ Ruta de login registrada")
+	log.Println("Ruta de login registrada")
 
 	userRepo := &userInfra.UserRepository{DB: db}
 
@@ -61,7 +63,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/users/by-area", userController.GetUsersByAreaHandler)     // POST
 	mux.HandleFunc("/users/by-cendis", userController.GetUsersByCendisHandler) // POST
 
-	log.Println("✅ Rutas de usuarios registradas")
+	log.Println("Rutas de usuarios registradas")
 
 	camaRepo := &camasInfra.CamaRepository{DB: db}
 
@@ -98,7 +100,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/camas/frbyar", camaController.GetFreeCamasByAreaHandler) //POST
 	mux.HandleFunc("/camas/setfree", camaController.SetFreeCamaHandler)
 
-	log.Println("✅ Rutas de camas registradas")
+	log.Println("Rutas de camas registradas")
 
 	areaRepo := &areasInfra.AreasRepository{DB: db}
 
@@ -127,7 +129,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/areas", areaController.GetAllAreasHandler)       // GET
 	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
 	mux.HandleFunc("/areas/free", areaController.GetFreeAreasHandler)
-	log.Println("✅ Rutas de áreas registradas")
+	log.Println("Rutas de áreas registradas")
 
 	// === CENDIS ===
 	cendisRepo := &cendisInfra.CendisRepository{DB: db}
@@ -148,7 +150,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/cendis/delete", cendisController.DeleteCendisHandler) // DELETE
 	mux.HandleFunc("/cendis/all", cendisController.GetAllCendisHandler)    // POST
 
-	log.Println("✅ Rutas de cendis registradas")
+	log.Println(" Rutas de cendis registradas")
 
 	claveRepo := &clavesInfra.ClaveRepository{DB: db}
 	searchClaveUC := &clavesApp.SearchClave{Repo: claveRepo}
@@ -156,10 +158,29 @@ func RegisterRoutes(db *sql.DB) {
 
 	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave) // GET
 
-	log.Println("✅ Rutas de medicamentos registradas")
+	log.Println("Rutas de medicamentos registradas")
+
+	colectivosRepo := &colectivosInfra.ColectivoRepository{DB: db}
+
+	createColectivoUC := &colectivosApp.CreateColectivo{Repo: colectivosRepo}
+	getColectivosByCendisUC := &colectivosApp.GetColectivosByCendis{Repo: colectivosRepo}
+	getPendingColectivosByCendisUC := &colectivosApp.GetPendingColectivosByCendis{Repo: colectivosRepo}
+
+	colectivosController := colectivosInfra.NewColectivosController(
+		createColectivoUC,
+		getColectivosByCendisUC,
+		getPendingColectivosByCendisUC,
+	)
+
+	// Rutas
+	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)               // POST
+	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)      // POST
+	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler) // POST
+
+	log.Println("Rutas de colectivos registradas")
 
 	handlerWithCors := corsMiddleware(mux)
 
-	log.Println("🚀 Servidor escuchando en :8080")
+	log.Println("Servidor escuchando en :8080")
 	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 }
