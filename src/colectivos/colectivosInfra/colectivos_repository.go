@@ -19,13 +19,6 @@ func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.Colecti
 		return err
 	}
 
-	var idArea interface{}
-	if colectivo.Id_area == 0 {
-		idArea = nil
-	} else {
-		idArea = colectivo.Id_area
-	}
-
 	queryColectivo := `
 		INSERT INTO colectivos (folio, fecha, id_user, id_area, id_cendis, capturado)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -34,7 +27,7 @@ func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.Colecti
 		nil, // folio se actualiza después
 		colectivo.Fecha,
 		colectivo.Id_user,
-		idArea, // aquí ya puede ser NULL si aplica
+		colectivo.Id_area,
 		colectivo.Id_cendis,
 		colectivo.Capturado,
 	)
@@ -110,12 +103,54 @@ func (r *ColectivoRepository) GetColectivosByCendis(id int32) ([]*colectivoEntit
 	return colectivos, nil
 }
 
+func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEntity.ColectivoDetalleEntity, error) {
+	query := `
+		SELECT 
+			cd.id_detalle,
+			cd.id_colectivo,
+			cd.id_medicamento,
+			m.clave_med,
+			m.descripcion,
+			cd.cantidad
+		FROM colectivo_detalle cd
+		INNER JOIN medicamentos m ON m.id_medicamento = cd.id_medicamento
+		WHERE cd.id_colectivo = ?;
+	`
+
+	rows, err := r.DB.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var detalles []colectivoEntity.ColectivoDetalleEntity
+
+	for rows.Next() {
+		var d colectivoEntity.ColectivoDetalleEntity
+		if err := rows.Scan(
+			&d.Id_detalle,
+			&d.Id_colectivo,
+			&d.Id_medicamento,
+			&d.Clave, // 4  <- m.clave_med
+			&d.Descripcion,
+			&d.Cantidad,
+		); err != nil {
+			return nil, err
+		}
+
+		detalles = append(detalles, d)
+	}
+
+	return detalles, nil
+}
+
 func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
 	query := `
 		SELECT id_colectivo, folio, fecha, id_user, id_area, id_cendis, capturado
 		FROM colectivos
 		WHERE id_cendis = ? AND capturado = 0
 	`
+
 	rows, err := r.DB.Query(query, id)
 	if err != nil {
 		return nil, err
@@ -123,8 +158,10 @@ func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colecti
 	defer rows.Close()
 
 	var pendientes []*colectivoEntity.ColectivoEntity
+
 	for rows.Next() {
 		var c colectivoEntity.ColectivoEntity
+
 		if err := rows.Scan(
 			&c.Id_colectivo,
 			&c.Folio,
@@ -136,7 +173,16 @@ func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colecti
 		); err != nil {
 			return nil, err
 		}
+
+		// 🔥 Aquí se agregan los detalles del colectivo
+		detalles, err := r.getDetallesByColectivoID(c.Id_colectivo)
+		if err != nil {
+			return nil, err
+		}
+		c.Claves = detalles
+
 		pendientes = append(pendientes, &c)
 	}
+
 	return pendientes, nil
 }
