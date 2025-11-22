@@ -12,6 +12,8 @@ import (
 	"DIMISA/src/colectivos/colectivosApp"
 	"DIMISA/src/colectivos/colectivosInfra"
 	"DIMISA/src/core/auth"
+	"DIMISA/src/entradas/entradasApp"
+	"DIMISA/src/entradas/entradasInfra"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
 	"database/sql"
@@ -172,6 +174,14 @@ func RegisterRoutes(db *sql.DB) {
 		getPendingColectivosByCendisUC,
 	)
 
+	// === ENTRADAS ===
+	entradasRepo := &entradasInfra.EntradasRepository{DB: db}
+	capturarEntradaUC := &entradasApp.CapturarEntradaUseCase{Repo: entradasRepo}
+	entradasController := entradasInfra.NewEntradaController(capturarEntradaUC)
+
+	mux.HandleFunc("/entradas/capturar", entradasController.CapturarEntrada) // POST
+
+	log.Println("Rutas de entradas registradas")
 	// Rutas
 	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)               // POST
 	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)      // POST

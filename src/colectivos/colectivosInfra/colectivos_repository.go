@@ -131,7 +131,7 @@ func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEnt
 			&d.Id_detalle,
 			&d.Id_colectivo,
 			&d.Id_medicamento,
-			&d.Clave, // 4  <- m.clave_med
+			&d.Clave,
 			&d.Descripcion,
 			&d.Cantidad,
 		); err != nil {
