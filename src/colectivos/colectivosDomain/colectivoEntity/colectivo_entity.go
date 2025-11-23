@@ -10,6 +10,7 @@ type ColectivoEntity struct {
 	Nombre_usuario string                   `json:"nombre_usuario"`
 	Id_area        sql.NullInt32            `json:"id_area"`
 	Id_cendis      int32                    `json:"id_cendis"`
+	Cendis         string                   `json:"cendis"`
 	Capturado      bool                     `json:"capturado"`
 	Claves         []ColectivoDetalleEntity `json:"claves"`
 }

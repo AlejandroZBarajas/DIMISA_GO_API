@@ -197,10 +197,13 @@ func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colec
             CONCAT(u.nombres, ' ', u.apellido1, ' ', u.apellido2) AS nombre_usuario,
             c.id_area, 
             c.id_cendis, 
+			ce.cendis_nombre AS cendis,
             c.capturado
         FROM colectivos c
         INNER JOIN usuarios u ON c.id_user = u.id_usuario
+		INNER JOIN cendis ce ON c.id_cendis = ce.id_cendis
         WHERE c.id_cendis = ? AND c.editable = 1
+		
     `
 	rows, err := r.DB.Query(query, id)
 	if err != nil {
@@ -219,6 +222,7 @@ func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colec
 			&c.Nombre_usuario,
 			&c.Id_area,
 			&c.Id_cendis,
+			&c.Cendis,
 			&c.Capturado,
 		); err != nil {
 			return nil, err
