@@ -186,3 +186,51 @@ func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colecti
 
 	return pendientes, nil
 }
+
+func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+	query := `
+        SELECT 
+            c.id_colectivo, 
+            c.folio, 
+            c.fecha, 
+            c.id_user,
+            CONCAT(u.nombres, ' ', u.apellido1, ' ', u.apellido2) AS nombre_usuario,
+            c.id_area, 
+            c.id_cendis, 
+            c.capturado
+        FROM colectivos c
+        INNER JOIN usuarios u ON c.id_user = u.id_usuario
+        WHERE c.id_cendis = ? AND c.editable = 1
+    `
+	rows, err := r.DB.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var editables []*colectivoEntity.ColectivoEntity
+	for rows.Next() {
+		var c colectivoEntity.ColectivoEntity
+		if err := rows.Scan(
+			&c.Id_colectivo,
+			&c.Folio,
+			&c.Fecha,
+			&c.Id_user,
+			&c.Nombre_usuario,
+			&c.Id_area,
+			&c.Id_cendis,
+			&c.Capturado,
+		); err != nil {
+			return nil, err
+		}
+
+		detalles, err := r.getDetallesByColectivoID(c.Id_colectivo)
+		if err != nil {
+			return nil, err
+		}
+		c.Claves = detalles
+
+		editables = append(editables, &c)
+	}
+	return editables, nil
+}

@@ -167,11 +167,13 @@ func RegisterRoutes(db *sql.DB) {
 	createColectivoUC := &colectivosApp.CreateColectivo{Repo: colectivosRepo}
 	getColectivosByCendisUC := &colectivosApp.GetColectivosByCendis{Repo: colectivosRepo}
 	getPendingColectivosByCendisUC := &colectivosApp.GetPendingColectivosByCendis{Repo: colectivosRepo}
+	getUpdatableColectivosByCendisUC := &colectivosApp.GetUpdatableColectivosByCendis{Repo: colectivosRepo}
 
 	colectivosController := colectivosInfra.NewColectivosController(
 		createColectivoUC,
 		getColectivosByCendisUC,
 		getPendingColectivosByCendisUC,
+		getUpdatableColectivosByCendisUC,
 	)
 
 	// === ENTRADAS ===
@@ -183,10 +185,10 @@ func RegisterRoutes(db *sql.DB) {
 
 	log.Println("Rutas de entradas registradas")
 	// Rutas
-	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)               // POST
-	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)      // POST
-	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler) // POST
-
+	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)                   // POST
+	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)          // POST
+	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
+	mux.HandleFunc("/colectivos/editables", colectivosController.GetUpdatableColectivosByCendisHandler) //POST
 	log.Println("Rutas de colectivos registradas")
 
 	handlerWithCors := corsMiddleware(mux)
