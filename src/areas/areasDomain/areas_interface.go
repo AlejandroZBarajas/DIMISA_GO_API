@@ -11,4 +11,5 @@ type AreasInterface interface {
 	GetAreaByID(id int32) (*areaEntity.AreaEntity, error)
 	DeleteArea(id int32) error
 	GetFreeAreas() ([]*areaEntity.AreaEntity, error)
+	GetAreasByCendis(id int32) ([]*areaEntity.AreaEntity, error)
 }

@@ -114,3 +114,32 @@ func (r *AreasRepository) GetFreeAreas() ([]*areaEntity.AreaEntity, error) {
 
 	return areas, nil
 }
+
+func (r *AreasRepository) GetAreasByCendis(id int32) ([]*areaEntity.AreaEntity, error) {
+	query := `
+	SELECT a.id_area, a.nombre_area, a.alias
+	FROM areas a 
+	INNER JOIN areas_cendis ac ON a.id_area = ac.id_area
+	WHERE ac.id_cendis = ?
+	`
+	rows, err := r.DB.Query(query, id)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener áreas del cendis: %w", err)
+	}
+	defer rows.Close()
+
+	var areas []*areaEntity.AreaEntity
+	for rows.Next() {
+		area := &areaEntity.AreaEntity{}
+		if err := rows.Scan(&area.Id_area, &area.Nombre_area, &area.Alias); err != nil {
+			return nil, fmt.Errorf("error al escanear área del cendis: %w", err)
+		}
+		areas = append(areas, area)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error durante la iteración de áreas: %w", err)
+	}
+
+	return areas, nil
+}

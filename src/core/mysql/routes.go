@@ -115,6 +115,7 @@ func RegisterRoutes(db *sql.DB) {
 	getByIDAreaUC := &areasApp.GetAreaByIDUseCase{Repo: areaRepo}
 	deleteAreaUC := &areasApp.DeleteAreaUseCase{Repo: areaRepo}
 	getFreeAreasUC := &areasApp.GetFreeAreasUseCase{Repo: areaRepo}
+	getAreasByCendisUC := &areasApp.GetAreasByCendisUseCase{Repo: areaRepo}
 
 	areaController := areasInfra.NewAreasController(
 		createAreaUC,
@@ -123,6 +124,7 @@ func RegisterRoutes(db *sql.DB) {
 		getByIDAreaUC,
 		deleteAreaUC,
 		getFreeAreasUC,
+		getAreasByCendisUC,
 	)
 
 	mux.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
@@ -131,6 +133,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/areas", areaController.GetAllAreasHandler)       // GET
 	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
 	mux.HandleFunc("/areas/free", areaController.GetFreeAreasHandler)
+	mux.HandleFunc("/areas/cendis", areaController.GetAreasByCendisHandler)
 	log.Println("Rutas de áreas registradas")
 
 	// === CENDIS ===

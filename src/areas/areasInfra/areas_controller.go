@@ -8,12 +8,13 @@ import (
 )
 
 type AreasController struct {
-	CreateUC  *areasApp.CreateAreaUseCase
-	UpdateUC  *areasApp.UpdateAreaUseCase
-	GetAllUC  *areasApp.GetAllAreasUseCase
-	GetByIDUC *areasApp.GetAreaByIDUseCase
-	DeleteUC  *areasApp.DeleteAreaUseCase
-	GetFreeUC *areasApp.GetFreeAreasUseCase
+	CreateUC      *areasApp.CreateAreaUseCase
+	UpdateUC      *areasApp.UpdateAreaUseCase
+	GetAllUC      *areasApp.GetAllAreasUseCase
+	GetByIDUC     *areasApp.GetAreaByIDUseCase
+	DeleteUC      *areasApp.DeleteAreaUseCase
+	GetFreeUC     *areasApp.GetFreeAreasUseCase
+	GetByCendisUC *areasApp.GetAreasByCendisUseCase
 }
 
 func NewAreasController(
@@ -23,33 +24,17 @@ func NewAreasController(
 	getByIDUC *areasApp.GetAreaByIDUseCase,
 	deleteUC *areasApp.DeleteAreaUseCase,
 	getFreeUC *areasApp.GetFreeAreasUseCase,
+	getByCendisUC *areasApp.GetAreasByCendisUseCase,
 ) *AreasController {
 	return &AreasController{
-		CreateUC:  createUC,
-		UpdateUC:  updateUC,
-		GetAllUC:  getAllUC,
-		GetByIDUC: getByIDUC,
-		DeleteUC:  deleteUC,
-		GetFreeUC: getFreeUC,
+		CreateUC:      createUC,
+		UpdateUC:      updateUC,
+		GetAllUC:      getAllUC,
+		GetByIDUC:     getByIDUC,
+		DeleteUC:      deleteUC,
+		GetFreeUC:     getFreeUC,
+		GetByCendisUC: getByCendisUC,
 	}
-}
-
-func (c *AreasController) GetFreeAreasHandler(w http.ResponseWriter, r *http.Request) {
-	areas, err := c.GetFreeUC.Execute()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(areas)
-}
-
-func (c *AreasController) GetAllAreasHandler(w http.ResponseWriter, r *http.Request) {
-	areas, err := c.GetAllUC.Execute()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(areas)
 }
 
 func (c *AreasController) CreateAreaHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,4 +103,44 @@ func (c *AreasController) DeleteAreaHandler(w http.ResponseWriter, r *http.Reque
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Área eliminada correctamente"}`))
+}
+
+func (c *AreasController) GetFreeAreasHandler(w http.ResponseWriter, r *http.Request) {
+	areas, err := c.GetFreeUC.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(areas)
+}
+
+func (c *AreasController) GetAllAreasHandler(w http.ResponseWriter, r *http.Request) {
+	areas, err := c.GetAllUC.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(areas)
+}
+func (c *AreasController) GetAreasByCendisHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Id_cendis int32 `json:"id_cendis"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+
+	areas, err := c.GetByCendisUC.Execute(req.Id_cendis)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(areas); err != nil {
+		http.Error(w, "Error al encodear respuesta", http.StatusInternalServerError)
+		return
+	}
 }
