@@ -14,6 +14,8 @@ import (
 	"DIMISA/src/core/auth"
 	"DIMISA/src/entradas/entradasApp"
 	"DIMISA/src/entradas/entradasInfra"
+	"DIMISA/src/salidas/salidasApp"
+	"DIMISA/src/salidas/salidasInfra"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
 	"database/sql"
@@ -136,6 +138,24 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/areas/cendis", areaController.GetAreasByCendisHandler)
 	log.Println("Rutas de áreas registradas")
 
+	// === SALIDAS ===
+	salidasRepo := &salidasInfra.SalidasRepository{DB: db}
+	createSlidaUC := &salidasApp.CreateSalida{Repo: salidasRepo}
+	updateSalidaUC := &salidasApp.UpdateSalida{Repo: salidasRepo}
+	deleteSalidaUC := &salidasApp.DeleteSalida{Repo: salidasRepo}
+	getSalidasByCendisUC := &salidasApp.GetSalidasByCendis{Repo: salidasRepo}
+	getSalidasPendientesUC := &salidasApp.GetSalidasPendientes{Repo: salidasRepo}
+
+	salidasController := salidasInfra.NewSalidasController(
+		createSlidaUC,
+		updateSalidaUC,
+		deleteSalidaUC,
+		getSalidasByCendisUC,
+		getSalidasPendientesUC,
+	)
+
+	mux.HandleFunc("salidas/create", salidasController.CreateSalidaHnadler)
+
 	// === CENDIS ===
 	cendisRepo := &cendisInfra.CendisRepository{DB: db}
 	createCendisUC := &cendisApp.CreateCendisUseCase{Repo: cendisRepo}
@@ -187,7 +207,8 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/entradas/capturar", entradasController.CapturarEntrada) // POST
 
 	log.Println("Rutas de entradas registradas")
-	// Rutas
+
+	// === COLECTIVOS ===
 	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)                   // POST
 	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)          // POST
 	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
