@@ -172,14 +172,15 @@ func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) e
 }
 
 func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEntity.SalidaEntity, error) {
-	query := `
-		SELECT id_salida, id_area, id_cendis, id_usuario, fecha, created_at
+	// Query principal para obtener las salidas
+	querySalidas := `
+		SELECT id_salida, id_area, id_cendis, id_usuario, fecha, created_at, editable, pendiente
 		FROM salidas
-		WHERE id_cendis = $1
+		WHERE id_cendis = ?
 		ORDER BY created_at DESC
 	`
 
-	rows, err := repo.DB.Query(query, id_cendis)
+	rows, err := repo.DB.Query(querySalidas, id_cendis)
 	if err != nil {
 		return nil, fmt.Errorf("error al consultar salidas: %w", err)
 	}
@@ -196,10 +197,45 @@ func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEnt
 			&salida.Id_usuario,
 			&salida.Fecha,
 			&salida.Created_at,
+			&salida.Editable,
+			&salida.Pendiente,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error al escanear salida: %w", err)
 		}
+
+		// Obtener los detalles de esta salida
+		queryDetalles := `
+			SELECT id_salida_detalle, id_salida, id_medicamento, cantidad
+			FROM salidas_detalle
+			WHERE id_salida = ?
+		`
+
+		detalleRows, err := repo.DB.Query(queryDetalles, salida.Id_salida)
+		if err != nil {
+			return nil, fmt.Errorf("error al consultar detalles de salida: %w", err)
+		}
+
+		var detalles []salidaEntity.SalidaDetalleEntity
+		for detalleRows.Next() {
+			var detalle salidaEntity.SalidaDetalleEntity
+			err := detalleRows.Scan(
+				&detalle.Id_salidaDetalle,
+				&detalle.Id_salida,
+				&detalle.Id_medicamento,
+				&detalle.Cantidad,
+			)
+			if err != nil {
+				detalleRows.Close()
+				return nil, fmt.Errorf("error al escanear detalle: %w", err)
+			}
+			detalles = append(detalles, detalle)
+		}
+		detalleRows.Close()
+
+		// Asignar los detalles a la salida
+		salida.Claves = detalles
+
 		salidas = append(salidas, salida)
 	}
 
@@ -211,7 +247,7 @@ func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEnt
 }
 
 func (repo *SalidasRepository) DeleteSalida(id_salida int32) error {
-	query := `DELETE FROM salidas WHERE id_salida = $1`
+	query := `DELETE FROM salidas WHERE id_salida = ?`
 
 	result, err := repo.DB.Exec(query, id_salida)
 	if err != nil {

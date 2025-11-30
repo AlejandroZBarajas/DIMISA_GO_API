@@ -4,6 +4,7 @@ import (
 	"DIMISA/src/salidas/salidasApp"
 	salidaEntity "DIMISA/src/salidas/salidasDomain/entity"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,7 +35,8 @@ func NewSalidasController(
 }
 
 // POST /salidas
-func (ctrl *SalidasController) CreateSalidaHnadler(w http.ResponseWriter, r *http.Request) {
+func (ctrl *SalidasController) CreateSalidaHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("entra al controller")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
@@ -62,7 +64,7 @@ func (ctrl *SalidasController) CreateSalidaHnadler(w http.ResponseWriter, r *htt
 }
 
 // PUT /salidas/{id}
-func (ctrl *SalidasController) UpdateSalida(w http.ResponseWriter, r *http.Request) {
+func (ctrl *SalidasController) UpdateSalidaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
@@ -109,30 +111,32 @@ func (ctrl *SalidasController) UpdateSalida(w http.ResponseWriter, r *http.Reque
 }
 
 // GET /salidas/cendis/{id_cendis}
-func (ctrl *SalidasController) GetSalidasByCendis(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+// POST /salidas/cendis
+func (ctrl *SalidasController) GetSalidasByCendisHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Extraer ID de la URL
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 3 {
+	var request struct {
+		Id_cendis int32 `json:"id_cendis"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	if request.Id_cendis == 0 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "ID de cendis no proporcionado"})
 		return
 	}
 
-	id_cendis, err := strconv.ParseInt(pathParts[len(pathParts)-1], 10, 32)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "ID de cendis inválido"})
-		return
-	}
-
-	salidas, err := ctrl.GetSalidasByCendisUseCase.Execute(int32(id_cendis))
+	salidas, err := ctrl.GetSalidasByCendisUseCase.Execute(request.Id_cendis)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -146,7 +150,7 @@ func (ctrl *SalidasController) GetSalidasByCendis(w http.ResponseWriter, r *http
 }
 
 // DELETE /salidas/{id}
-func (ctrl *SalidasController) DeleteSalida(w http.ResponseWriter, r *http.Request) {
+func (ctrl *SalidasController) DeleteSalidaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
@@ -180,3 +184,5 @@ func (ctrl *SalidasController) DeleteSalida(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Salida eliminada exitosamente"})
 }
+
+func (ctrl *SalidasController) GetSalidasPendientesHandler(w http.ResponseWriter, r *http.Request) {}

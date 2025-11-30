@@ -154,7 +154,13 @@ func RegisterRoutes(db *sql.DB) {
 		getSalidasPendientesUC,
 	)
 
-	mux.HandleFunc("salidas/create", salidasController.CreateSalidaHnadler)
+	mux.HandleFunc("/salidas/create", salidasController.CreateSalidaHandler)
+	mux.HandleFunc("/salidas/update", salidasController.UpdateSalidaHandler)
+	mux.HandleFunc("/salidas/delete", salidasController.DeleteSalidaHandler)
+	mux.HandleFunc("/salidas/cendis", salidasController.GetSalidasByCendisHandler)
+	mux.HandleFunc("/salidas/pendientes", salidasController.GetSalidasPendientesHandler)
+
+	log.Println(" Rutas de salidas registradas")
 
 	// === CENDIS ===
 	cendisRepo := &cendisInfra.CendisRepository{DB: db}
