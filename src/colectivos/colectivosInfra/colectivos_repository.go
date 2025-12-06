@@ -110,7 +110,7 @@ func (r *ColectivoRepository) GetColectivosByCendis(id int32) ([]*colectivoEntit
 	return colectivos, nil
 }
 
-func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEntity.ColectivoDetalleEntity, error) {
+func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEntity.ColectivoDetalleDTO, error) {
 	query := `
 		SELECT 
 			cd.id_detalle,
@@ -130,10 +130,10 @@ func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEnt
 	}
 	defer rows.Close()
 
-	var detalles []colectivoEntity.ColectivoDetalleEntity
+	var detalles []colectivoEntity.ColectivoDetalleDTO
 
 	for rows.Next() {
-		var d colectivoEntity.ColectivoDetalleEntity
+		var d colectivoEntity.ColectivoDetalleDTO
 		if err := rows.Scan(
 			&d.Id_detalle,
 			&d.Id_colectivo,
