@@ -16,8 +16,11 @@ import (
 	"DIMISA/src/entradas/entradasInfra"
 	"DIMISA/src/salidas/salidasApp"
 	"DIMISA/src/salidas/salidasInfra"
+	"DIMISA/src/tipos_colectivo_salida/tiposApp"
+	"DIMISA/src/tipos_colectivo_salida/tiposInfra"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
+
 	"database/sql"
 	"log"
 	"net/http"
@@ -220,6 +223,12 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
 	mux.HandleFunc("/colectivos/editables", colectivosController.GetUpdatableColectivosByCendisHandler) //POST
 	log.Println("Rutas de colectivos registradas")
+
+	tiposRepo := &tiposInfra.TiposRepository{DB: db}
+	getTiposUC := &tiposApp.GetTipos{Repo: tiposRepo}
+	tiposController := tiposInfra.NewTiposController(getTiposUC)
+
+	mux.HandleFunc("/tipos", tiposController.GetTiposHandler) // GET
 
 	handlerWithCors := corsMiddleware(mux)
 
