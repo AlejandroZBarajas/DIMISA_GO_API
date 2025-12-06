@@ -1,0 +1,89 @@
+en la db tengo 
+mysql> show tables;
++-------------------------+
+| Tables_in_dimisa        |
++-------------------------+
+| admin_users             |
+| admision_users          |
+| areas                   |
+| areas_cendis            |
+| cama_medicamento        |
+| camas                   |
+| cendis                  |
+| colectivo_detalle       |
+| colectivos              |
+| enfermeria_users        |
+| inventarios             |
+| jefes_users             |
+| medicamentos            |
+| movimientos_inventarios |
+| presentaciones          |
+| roles                   |
+| salidas                 |
+| salidas_aux             |
+| salidas_detalle         |
+| turnos                  |
+| unidosis_users          |
+| usuarios                |
++-------------------------+
+22 rows in set (0.00 sec)
+
+mysql> desc admin_users;
++---------+------+------+-----+---------+-------+
+| Field   | Type | Null | Key | Default | Extra |
++---------+------+------+-----+---------+-------+
+| id_user | int  | NO   | PRI | NULL    |       |
++---------+------+------+-----+---------+-------+
+1 row in set (0.00 sec)
+
+mysql> desc admision_users;
++---------+------+------+-----+---------+-------+
+| Field   | Type | Null | Key | Default | Extra |
++---------+------+------+-----+---------+-------+
+| id_user | int  | NO   | PRI | NULL    |       |
++---------+------+------+-----+---------+-------+
+1 row in set (0.00 sec)
+
+mysql> desc enfermeria_users;
++----------+------+------+-----+---------+-------+
+| Field    | Type | Null | Key | Default | Extra |
++----------+------+------+-----+---------+-------+
+| id_user  | int  | NO   | PRI | NULL    |       |
+| id_area  | int  | NO   | MUL | NULL    |       |
+| id_turno | int  | NO   | MUL | NULL    |       |
++----------+------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+mysql> desc jefes_users;
++---------+------+------+-----+---------+-------+
+| Field   | Type | Null | Key | Default | Extra |
++---------+------+------+-----+---------+-------+
+| id_user | int  | NO   | PRI | NULL    |       |
++---------+------+------+-----+---------+-------+
+1 row in set (0.00 sec)
+
+mysql> desc unidosis_users;
++-----------+------+------+-----+---------+-------+
+| Field     | Type | Null | Key | Default | Extra |
++-----------+------+------+-----+---------+-------+
+| id_user   | int  | NO   | PRI | NULL    |       |
+| id_cendis | int  | NO   | MUL | NULL    |       |
+| id_turno  | int  | NO   | MUL | NULL    |       |
++-----------+------+------+-----+---------+-------+
+3 rows in set (0.00 sec)
+
+mysql> desc usuarios;
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id_usuario | int          | NO   | PRI | NULL    | auto_increment |
+| nombres    | varchar(45)  | NO   |     | NULL    |                |
+| apellido1  | varchar(45)  | NO   |     | NULL    |                |
+| apellido2  | varchar(45)  | NO   |     | NULL    |                |
+| username   | varchar(45)  | NO   |     | NULL    |                |
+| password   | varchar(100) | YES  |     | NULL    |                |
+| id_rol     | int          | YES  | MUL | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
+7 rows in set (0.00 sec)
+
+mysql>  y en el front necesito un formulario que sirva para edición y creación de usuarios. El formulario TIENE que ser dinamico, dependiendo del rol, son los datos que renderizará despues para poder llenar las tablas de la db

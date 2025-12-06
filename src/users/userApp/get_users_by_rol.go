@@ -1,9 +1,8 @@
 package userApp
-/* 
 
 import (
-	"DIMISA/src/users/userDomain/usersEntities"
 	"DIMISA/src/users/userDomain"
+	"DIMISA/src/users/userDomain/usersEntities"
 )
 
 type GetUsersByRolUseCase struct {
@@ -13,4 +12,3 @@ type GetUsersByRolUseCase struct {
 func (uc *GetUsersByRolUseCase) Execute(rol int32) ([]*usersEntities.UserEntity, error) {
 	return uc.Repo.GetByRol(rol)
 }
- */

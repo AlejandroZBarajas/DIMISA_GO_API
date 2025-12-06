@@ -1,9 +1,8 @@
 package userApp
-/* 
 
 import (
-	"DIMISA/src/users/userDomain/usersEntities"
 	"DIMISA/src/users/userDomain"
+	"DIMISA/src/users/userDomain/usersEntities"
 )
 
 type GetUsersByCendisUseCase struct {
@@ -13,4 +12,3 @@ type GetUsersByCendisUseCase struct {
 func (uc *GetUsersByCendisUseCase) Execute(cendisID int32) ([]*usersEntities.UserCendisEntity, error) {
 	return uc.Repo.GetByCendisID(cendisID)
 }
- */

@@ -1,9 +1,8 @@
 package userApp
-/* 
 
 import (
-	"DIMISA/src/users/userDomain/usersEntities"
 	"DIMISA/src/users/userDomain"
+	"DIMISA/src/users/userDomain/usersEntities"
 )
 
 type GetAllUsersUseCase struct {
@@ -13,4 +12,3 @@ type GetAllUsersUseCase struct {
 func (uc *GetAllUsersUseCase) Execute() ([]*usersEntities.UserEntity, error) {
 	return uc.Repo.GetAll()
 }
- */

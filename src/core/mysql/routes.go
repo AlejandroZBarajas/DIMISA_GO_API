@@ -1,26 +1,228 @@
 package mysql
 
 import (
-		"database/sql"
+	"DIMISA/src/areas/areasApp"
+	"DIMISA/src/areas/areasInfra"
+	"DIMISA/src/camas/camasApp"
+	"DIMISA/src/camas/camasInfra"
+	"DIMISA/src/cendis/cendisApp"
+	"DIMISA/src/cendis/cendisInfra"
+	"DIMISA/src/claves/clavesApp"
+	"DIMISA/src/claves/clavesInfra"
+	"DIMISA/src/colectivos/colectivosApp"
+	"DIMISA/src/colectivos/colectivosInfra"
+	"DIMISA/src/core/auth"
+	"DIMISA/src/entradas/entradasApp"
+	"DIMISA/src/entradas/entradasInfra"
+	"DIMISA/src/salidas/salidasApp"
+	"DIMISA/src/salidas/salidasInfra"
+	"DIMISA/src/users/userApp"
+	"DIMISA/src/users/userInfra"
+	"database/sql"
 	"log"
 	"net/http"
-	"DIMISA/src/users/userInfra"
-	"DIMISA/src/users/userApp"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 func RegisterRoutes(db *sql.DB) {
-	// Repositorio
+
+	mux := http.NewServeMux()
+
+	loginHandler := &auth.LoginHandler{DB: db}
+	mux.Handle("/login", loginHandler)
+	log.Println("Ruta de login registrada")
+
 	userRepo := &userInfra.UserRepository{DB: db}
 
-	// UseCase
-	createUseCase := &userApp.CreateUserUseCase{Repo: userRepo}
+	userController := userInfra.NewUserController(
+		&userApp.CreateUserUseCase{Repo: userRepo},
+		&userApp.UpdateUserUseCase{Repo: userRepo},
+		&userApp.DeleteUserUseCase{Repo: userRepo},
+		&userApp.GetAllUsersUseCase{Repo: userRepo},
+		&userApp.GetUsersByRolUseCase{Repo: userRepo},
+		&userApp.GetUserByIDUseCase{Repo: userRepo},
+		&userApp.GetUsersByAreaUseCase{Repo: userRepo},
+		&userApp.GetUsersByCendisUseCase{Repo: userRepo},
+	)
 
-	// Controlador
-	userController := userInfra.NewUserController(createUseCase)
+	mux.HandleFunc("/users/create", userController.CreateUserHandler)          // POST
+	mux.HandleFunc("/users/update", userController.UpdateUserHandler)          // PUT
+	mux.HandleFunc("/users/delete", userController.DeleteUserHandler)          // DELETE
+	mux.HandleFunc("/users/all", userController.GetAllUsersHandler)            // GET
+	mux.HandleFunc("/users/by-rol", userController.GetUsersByRolHandler)       // POST
+	mux.HandleFunc("/users/by-id", userController.GetUserByIDHandler)          // POST
+	mux.HandleFunc("/users/by-area", userController.GetUsersByAreaHandler)     // POST
+	mux.HandleFunc("/users/by-cendis", userController.GetUsersByCendisHandler) // POST
+
+	log.Println("Rutas de usuarios registradas")
+
+	camaRepo := &camasInfra.CamaRepository{DB: db}
+
+	createCamaUC := &camasApp.CreateCama{Repo: camaRepo}
+	updateCamaUC := &camasApp.UpdateCama{Repo: camaRepo}
+	deleteCamaUC := &camasApp.DeleteCama{Repo: camaRepo}
+	getByAreaCamaUC := &camasApp.GetCamasByArea{Repo: camaRepo}
+	enableCamaUC := &camasApp.EnableCama{Repo: camaRepo}
+	disableCamaUC := &camasApp.DisableCama{Repo: camaRepo}
+	createCamasRangeUC := &camasApp.CreateCamasRange{Repo: camaRepo}
+	getFreeCamasByAreaUC := &camasApp.GetFreeCamasByArea{Repo: camaRepo}
+	setFreeCamaUC := &camasApp.SetFreeCama{Repo: camaRepo}
+
+	camaController := camasInfra.NewCamaController(
+		createCamaUC,
+		updateCamaUC,
+		deleteCamaUC,
+		getByAreaCamaUC,
+		enableCamaUC,
+		disableCamaUC,
+		createCamasRangeUC,
+		getFreeCamasByAreaUC,
+		setFreeCamaUC,
+	)
 
 	// Rutas
-	http.HandleFunc("/users/create", userController.CreateUserHandler)
+	mux.HandleFunc("/camas/create", camaController.CreateCamaHandler)         // POST
+	mux.HandleFunc("/camas/update", camaController.UpdateCamaHandler)         // PUT
+	mux.HandleFunc("/camas/delete", camaController.DeleteCamaHandler)         // DELETE
+	mux.HandleFunc("/camas/ar", camaController.GetCamasByAreaHandler)         // POST
+	mux.HandleFunc("/camas/enable", camaController.EnableCamaHandler)         // PUT
+	mux.HandleFunc("/camas/disable", camaController.DisableCamaHandler)       // PUT
+	mux.HandleFunc("/camas/range", camaController.CreateCamasRangeHandler)    //POST
+	mux.HandleFunc("/camas/frbyar", camaController.GetFreeCamasByAreaHandler) //POST
+	mux.HandleFunc("/camas/setfree", camaController.SetFreeCamaHandler)
 
+	log.Println("Rutas de camas registradas")
 
-	log.Println("✅ Rutas de usuarios registradas")
+	areaRepo := &areasInfra.AreasRepository{DB: db}
+
+	createAreaUC := &areasApp.CreateAreaUseCase{
+		Repo:     areaRepo,
+		CamaRepo: camaRepo,
+	}
+	updateAreaUC := &areasApp.UpdateAreaUseCase{Repo: areaRepo}
+	getAllAreaUC := &areasApp.GetAllAreasUseCase{Repo: areaRepo}
+	getByIDAreaUC := &areasApp.GetAreaByIDUseCase{Repo: areaRepo}
+	deleteAreaUC := &areasApp.DeleteAreaUseCase{Repo: areaRepo}
+	getFreeAreasUC := &areasApp.GetFreeAreasUseCase{Repo: areaRepo}
+	getAreasByCendisUC := &areasApp.GetAreasByCendisUseCase{Repo: areaRepo}
+
+	areaController := areasInfra.NewAreasController(
+		createAreaUC,
+		updateAreaUC,
+		getAllAreaUC,
+		getByIDAreaUC,
+		deleteAreaUC,
+		getFreeAreasUC,
+		getAreasByCendisUC,
+	)
+
+	mux.HandleFunc("/areas/create", areaController.CreateAreaHandler) // POST
+	mux.HandleFunc("/areas/update", areaController.UpdateAreaHandler) // PUT
+	mux.HandleFunc("/areas/delete", areaController.DeleteAreaHandler) // DELETE
+	mux.HandleFunc("/areas", areaController.GetAllAreasHandler)       // GET
+	mux.HandleFunc("/areas/by-id", areaController.GetAreaByIDHandler) // POST
+	mux.HandleFunc("/areas/free", areaController.GetFreeAreasHandler)
+	mux.HandleFunc("/areas/cendis", areaController.GetAreasByCendisHandler)
+	log.Println("Rutas de áreas registradas")
+
+	// === SALIDAS ===
+	salidasRepo := &salidasInfra.SalidasRepository{DB: db}
+	createSlidaUC := &salidasApp.CreateSalida{Repo: salidasRepo}
+	updateSalidaUC := &salidasApp.UpdateSalida{Repo: salidasRepo}
+	deleteSalidaUC := &salidasApp.DeleteSalida{Repo: salidasRepo}
+	getSalidasByCendisUC := &salidasApp.GetSalidasByCendis{Repo: salidasRepo}
+	getSalidasPendientesUC := &salidasApp.GetSalidasPendientes{Repo: salidasRepo}
+
+	salidasController := salidasInfra.NewSalidasController(
+		createSlidaUC,
+		updateSalidaUC,
+		deleteSalidaUC,
+		getSalidasByCendisUC,
+		getSalidasPendientesUC,
+	)
+
+	mux.HandleFunc("/salidas/create", salidasController.CreateSalidaHandler)
+	mux.HandleFunc("/salidas/update", salidasController.UpdateSalidaHandler)
+	mux.HandleFunc("/salidas/delete", salidasController.DeleteSalidaHandler)
+	mux.HandleFunc("/salidas/cendis", salidasController.GetSalidasByCendisHandler)
+	mux.HandleFunc("/salidas/pendientes", salidasController.GetSalidasPendientesHandler)
+
+	log.Println(" Rutas de salidas registradas")
+
+	// === CENDIS ===
+	cendisRepo := &cendisInfra.CendisRepository{DB: db}
+	createCendisUC := &cendisApp.CreateCendisUseCase{Repo: cendisRepo}
+	updateCendisUC := &cendisApp.UpdateCendisUseCase{Repo: cendisRepo}
+	deleteCendisUC := &cendisApp.DeleteCendisUseCase{Repo: cendisRepo}
+	getAllCendisUC := &cendisApp.GetAllCendisUseCase{Repo: cendisRepo}
+
+	cendisController := cendisInfra.NewCendisController(
+		createCendisUC,
+		updateCendisUC,
+		getAllCendisUC,
+		deleteCendisUC,
+	)
+
+	mux.HandleFunc("/cendis/create", cendisController.CreateCendisHandler) // POST
+	mux.HandleFunc("/cendis/update", cendisController.UpdateCendisHandler) // PUT
+	mux.HandleFunc("/cendis/delete", cendisController.DeleteCendisHandler) // DELETE
+	mux.HandleFunc("/cendis/all", cendisController.GetAllCendisHandler)    // POST
+
+	log.Println(" Rutas de cendis registradas")
+
+	claveRepo := &clavesInfra.ClaveRepository{DB: db}
+	searchClaveUC := &clavesApp.SearchClave{Repo: claveRepo}
+	claveController := clavesInfra.NewClaveController(searchClaveUC)
+
+	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave) // GET
+
+	log.Println("Rutas de medicamentos registradas")
+
+	colectivosRepo := &colectivosInfra.ColectivoRepository{DB: db}
+
+	createColectivoUC := &colectivosApp.CreateColectivo{Repo: colectivosRepo}
+	getColectivosByCendisUC := &colectivosApp.GetColectivosByCendis{Repo: colectivosRepo}
+	getPendingColectivosByCendisUC := &colectivosApp.GetPendingColectivosByCendis{Repo: colectivosRepo}
+	getUpdatableColectivosByCendisUC := &colectivosApp.GetUpdatableColectivosByCendis{Repo: colectivosRepo}
+
+	colectivosController := colectivosInfra.NewColectivosController(
+		createColectivoUC,
+		getColectivosByCendisUC,
+		getPendingColectivosByCendisUC,
+		getUpdatableColectivosByCendisUC,
+	)
+
+	// === ENTRADAS ===
+	entradasRepo := &entradasInfra.EntradasRepository{DB: db}
+	capturarEntradaUC := &entradasApp.CapturarEntradaUseCase{Repo: entradasRepo}
+	entradasController := entradasInfra.NewEntradaController(capturarEntradaUC)
+
+	mux.HandleFunc("/entradas/capturar", entradasController.CapturarEntrada) // POST
+
+	log.Println("Rutas de entradas registradas")
+
+	// === COLECTIVOS ===
+	mux.HandleFunc("/colectivos/create", colectivosController.CreateColectivoHandler)                   // POST
+	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)          // POST
+	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
+	mux.HandleFunc("/colectivos/editables", colectivosController.GetUpdatableColectivosByCendisHandler) //POST
+	log.Println("Rutas de colectivos registradas")
+
+	handlerWithCors := corsMiddleware(mux)
+
+	log.Println("Servidor escuchando en :8080")
+	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 }

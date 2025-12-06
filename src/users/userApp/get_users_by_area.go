@@ -1,10 +1,10 @@
 package userApp
-/* 
 
 import (
-	"DIMISA/src/users/userDomain/usersEntities"
 	"DIMISA/src/users/userDomain"
+	"DIMISA/src/users/userDomain/usersEntities"
 )
+
 type GetUsersByAreaUseCase struct {
 	Repo userDomain.UserInterface
 }
@@ -12,4 +12,3 @@ type GetUsersByAreaUseCase struct {
 func (uc *GetUsersByAreaUseCase) Execute(areaID int32) ([]*usersEntities.UserEnfermeriaEntity, error) {
 	return uc.Repo.GetByAreaID(areaID)
 }
- */
