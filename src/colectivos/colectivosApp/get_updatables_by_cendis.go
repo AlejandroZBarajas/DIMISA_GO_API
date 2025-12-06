@@ -9,6 +9,6 @@ type GetUpdatableColectivosByCendis struct {
 	Repo colectivosDomain.ColectivoInterface
 }
 
-func (uc *GetUpdatableColectivosByCendis) Execute(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+func (uc *GetUpdatableColectivosByCendis) Execute(id int32) ([]*colectivoEntity.ColectivoDTO, error) {
 	return uc.Repo.GetUpdatableColectivosByCendis(id)
 }

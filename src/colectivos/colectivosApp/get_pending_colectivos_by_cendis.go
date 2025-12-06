@@ -9,6 +9,6 @@ type GetPendingColectivosByCendis struct {
 	Repo colectivosDomain.ColectivoInterface
 }
 
-func (uc *GetPendingColectivosByCendis) Execute(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+func (uc *GetPendingColectivosByCendis) Execute(id int32) ([]*colectivoEntity.ColectivoDTO, error) {
 	return uc.Repo.GetPendingColectivosByCendis(id)
 }

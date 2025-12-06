@@ -158,7 +158,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/salidas/update", salidasController.UpdateSalidaHandler)
 	mux.HandleFunc("/salidas/delete", salidasController.DeleteSalidaHandler)
 	mux.HandleFunc("/salidas/cendis", salidasController.GetSalidasByCendisHandler)
-	mux.HandleFunc("/salidas/pendientes", salidasController.GetSalidasPendientesHandler)
+	mux.HandleFunc("/salidas/abiertas", salidasController.GetSalidasPendientesHandler)
 
 	log.Println(" Rutas de salidas registradas")
 

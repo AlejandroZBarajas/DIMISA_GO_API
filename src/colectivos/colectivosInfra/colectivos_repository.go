@@ -13,6 +13,7 @@ type ColectivoRepository struct {
 func NewColectivoRepository(db *sql.DB) *ColectivoRepository {
 	return &ColectivoRepository{DB: db}
 }
+
 func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.ColectivoEntity) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
@@ -20,16 +21,15 @@ func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.Colecti
 	}
 
 	queryColectivo := `
-		INSERT INTO colectivos (folio, fecha, id_user, id_area, id_cendis, capturado)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO colectivos (tipo_id, fecha, id_user, id_area, id_cendis)
+		VALUES (?, ?, ?, ?, ?)
 	`
 	result, err := tx.Exec(queryColectivo,
-		nil, // folio se actualiza después
+		colectivo.Tipo_id,
 		colectivo.Fecha,
 		colectivo.Id_user,
 		colectivo.Id_area,
 		colectivo.Id_cendis,
-		colectivo.Capturado,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -37,15 +37,6 @@ func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.Colecti
 	}
 
 	id, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	colectivo.Id_colectivo = int32(id)
-
-	folio := fmt.Sprintf("F-%d", id)
-	colectivo.Folio = folio
-	_, err = tx.Exec(`UPDATE colectivos SET folio = ? WHERE id_colectivo = ?`, folio, id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -72,11 +63,24 @@ func (r *ColectivoRepository) CreateColectivo(colectivo *colectivoEntity.Colecti
 	return nil
 }
 
-func (r *ColectivoRepository) GetColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+func (r *ColectivoRepository) GetColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error) {
 	query := `
-		SELECT id_colectivo, folio, fecha, id_user, id_area, id_cendis, capturado
-		FROM colectivos
-		WHERE id_cendis = ?
+		SELECT 
+			c.id_colectivo,
+			CONCAT('F-', c.id_colectivo) AS folio,
+			c.tipo_id,
+			t.nombre AS tipo,
+			c.fecha,
+			c.id_user,
+			CONCAT(u.nombres, ' ', u.apellido1, ' ', u.apellido2) AS nombre_usuario,
+			c.id_area,
+			c.id_cendis,
+			ce.cendis_nombre AS cendis
+		FROM colectivos c
+		INNER JOIN tipos t ON c.tipo_id = t.id_tipo
+		INNER JOIN usuarios u ON c.id_user = u.id_usuario
+		INNER JOIN cendis ce ON c.id_cendis = ce.id_cendis
+		WHERE c.id_cendis = ?
 	`
 	rows, err := r.DB.Query(query, id)
 	if err != nil {
@@ -84,17 +88,20 @@ func (r *ColectivoRepository) GetColectivosByCendis(id int32) ([]*colectivoEntit
 	}
 	defer rows.Close()
 
-	var colectivos []*colectivoEntity.ColectivoEntity
+	var colectivos []*colectivoEntity.ColectivoDTO
 	for rows.Next() {
-		var c colectivoEntity.ColectivoEntity
+		var c colectivoEntity.ColectivoDTO
 		if err := rows.Scan(
-			&c.Id_colectivo,
-			&c.Folio,
-			&c.Fecha,
-			&c.Id_user,
-			&c.Id_area,
-			&c.Id_cendis,
-			&c.Capturado,
+			&c.Id_colectivo,   // 1
+			&c.Folio,          // 2
+			&c.Tipo_id,        // 3
+			&c.Tipo,           // 4
+			&c.Fecha,          // 5
+			&c.Id_user,        // 6
+			&c.Nombre_usuario, // 7
+			&c.Id_area,        // 8
+			&c.Id_cendis,      // 9
+			&c.Cendis,         // 10
 		); err != nil {
 			return nil, err
 		}
@@ -144,66 +151,78 @@ func (r *ColectivoRepository) getDetallesByColectivoID(id int32) ([]colectivoEnt
 	return detalles, nil
 }
 
-func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+func (r *ColectivoRepository) GetPendingColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error) {
 	query := `
-		SELECT id_colectivo, folio, fecha, id_user, id_area, id_cendis, capturado
-		FROM colectivos
-		WHERE id_cendis = ? AND capturado = 0
+		SELECT 
+			c.id_colectivo,
+			CONCAT('F-', c.id_colectivo) AS folio,
+			c.tipo_id,
+			t.nombre AS tipo,
+			c.fecha,
+			c.id_user,
+			CONCAT(u.nombres, ' ', u.apellido1, ' ', u.apellido2) AS nombre_usuario,
+			c.id_area,
+			c.id_cendis,
+			ce.cendis_nombre AS cendis
+		FROM colectivos c
+		INNER JOIN tipos t ON c.tipo_id = t.id_tipo
+		INNER JOIN usuarios u ON c.id_user = u.id_usuario
+		INNER JOIN cendis ce ON c.id_cendis = ce.id_cendis
+		WHERE c.id_cendis = ? AND c.capturado = 0
 	`
-
 	rows, err := r.DB.Query(query, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var pendientes []*colectivoEntity.ColectivoEntity
+	var pendientes []*colectivoEntity.ColectivoDTO
 
 	for rows.Next() {
-		var c colectivoEntity.ColectivoEntity
+		var c colectivoEntity.ColectivoDTO
 
 		if err := rows.Scan(
-			&c.Id_colectivo,
-			&c.Folio,
-			&c.Fecha,
-			&c.Id_user,
-			&c.Id_area,
-			&c.Id_cendis,
-			&c.Capturado,
+			&c.Id_colectivo,   // 1
+			&c.Folio,          // 2
+			&c.Tipo_id,        // 3
+			&c.Tipo,           // 4
+			&c.Fecha,          // 5
+			&c.Id_user,        // 6
+			&c.Nombre_usuario, // 7
+			&c.Id_area,        // 8
+			&c.Id_cendis,      // 9
+			&c.Cendis,         // 10
 		); err != nil {
 			return nil, err
 		}
-
-		// 🔥 Aquí se agregan los detalles del colectivo
 		detalles, err := r.getDetallesByColectivoID(c.Id_colectivo)
 		if err != nil {
 			return nil, err
 		}
 		c.Claves = detalles
-
 		pendientes = append(pendientes, &c)
 	}
-
 	return pendientes, nil
 }
 
-func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoEntity, error) {
+func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error) {
 	query := `
         SELECT 
-            c.id_colectivo, 
-            c.folio, 
+            c.id_colectivo,
+			CONCAT('F-', c.id_colectivo) AS folio,
+			c.tipo_id,
+			t.nombre AS tipo,
             c.fecha, 
             c.id_user,
             CONCAT(u.nombres, ' ', u.apellido1, ' ', u.apellido2) AS nombre_usuario,
             c.id_area, 
             c.id_cendis, 
-			ce.cendis_nombre AS cendis,
-            c.capturado
+			ce.cendis_nombre AS cendis
         FROM colectivos c
+		INNER JOIN tipos t ON c.tipo_id = t.id_tipo
         INNER JOIN usuarios u ON c.id_user = u.id_usuario
 		INNER JOIN cendis ce ON c.id_cendis = ce.id_cendis
         WHERE c.id_cendis = ? AND c.editable = 1
-		
     `
 	rows, err := r.DB.Query(query, id)
 	if err != nil {
@@ -211,19 +230,20 @@ func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colec
 	}
 	defer rows.Close()
 
-	var editables []*colectivoEntity.ColectivoEntity
+	var editables []*colectivoEntity.ColectivoDTO
 	for rows.Next() {
-		var c colectivoEntity.ColectivoEntity
+		var c colectivoEntity.ColectivoDTO
 		if err := rows.Scan(
-			&c.Id_colectivo,
-			&c.Folio,
-			&c.Fecha,
-			&c.Id_user,
-			&c.Nombre_usuario,
-			&c.Id_area,
-			&c.Id_cendis,
-			&c.Cendis,
-			&c.Capturado,
+			&c.Id_colectivo,   // 1
+			&c.Folio,          // 2
+			&c.Tipo_id,        // 3
+			&c.Tipo,           // 4
+			&c.Fecha,          // 5
+			&c.Id_user,        // 6
+			&c.Nombre_usuario, // 7
+			&c.Id_area,        // 8
+			&c.Id_cendis,      // 9
+			&c.Cendis,         // 10
 		); err != nil {
 			return nil, err
 		}
