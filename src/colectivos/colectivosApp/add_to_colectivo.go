@@ -9,6 +9,6 @@ type AddToColectivo struct {
 	Repo colectivosDomain.ColectivoInterface
 }
 
-func (uc *AddToColectivo) Execute(colectivo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error {
-	return uc.Repo.AddToColectivo(colectivo, claves)
+func (uc *AddToColectivo) Execute(id_cendis, tipo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error {
+	return uc.Repo.AddToColectivo(id_cendis, tipo, claves)
 }

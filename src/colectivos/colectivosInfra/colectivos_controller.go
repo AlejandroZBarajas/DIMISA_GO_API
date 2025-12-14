@@ -109,6 +109,7 @@ func (cc *ColectivosController) GetUpdatableColectivosByCendisHandler(w http.Res
 
 func (cc *ColectivosController) AddToColectivoHandler(w http.ResponseWriter, r *http.Request) {
 	var body struct {
+		Id_cendis     int32                                     `json:"id_cendis"`
 		TipoColectivo int32                                     `json:"tipo_colectivo"`
 		Detalles      []*colectivoEntity.ColectivoDetalleEntity `json:"detalles"`
 	}
@@ -130,7 +131,7 @@ func (cc *ColectivosController) AddToColectivoHandler(w http.ResponseWriter, r *
 	}
 
 	// Ejecutar caso de uso
-	if err := cc.AddToColectivoUC.Execute(body.TipoColectivo, body.Detalles); err != nil {
+	if err := cc.AddToColectivoUC.Execute(body.Id_cendis, body.TipoColectivo, body.Detalles); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

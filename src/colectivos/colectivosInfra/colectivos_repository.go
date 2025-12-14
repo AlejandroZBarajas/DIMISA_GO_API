@@ -259,8 +259,7 @@ func (r *ColectivoRepository) GetUpdatableColectivosByCendis(id int32) ([]*colec
 	return editables, nil
 }
 
-func (r *ColectivoRepository) AddToColectivo(tipo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error {
-	// Iniciar transacción
+func (r *ColectivoRepository) AddToColectivo(id_cendis, tipo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("error al iniciar transacción: %w", err)
@@ -271,14 +270,15 @@ func (r *ColectivoRepository) AddToColectivo(tipo int32, claves []*colectivoEnti
 	query := `
 		SELECT id_colectivo 
 		FROM colectivos 
-		WHERE tipo_id = ? 
+		WHERE id_cendis = ? 
+		  AND tipo_id = ? 
 		  AND editable = 1 
 		LIMIT 1
 	`
-	err = tx.QueryRow(query, tipo).Scan(&idColectivo)
+	err = tx.QueryRow(query, id_cendis, tipo).Scan(&idColectivo)
 
 	if err == sql.ErrNoRows {
-		return fmt.Errorf("no existe un colectivo editable del tipo %d", tipo)
+		return fmt.Errorf(" para este cendis no existe un colectivo editable del tipo %d", tipo)
 	}
 	if err != nil {
 		return fmt.Errorf("error al buscar colectivo: %w", err)
@@ -297,7 +297,6 @@ func (r *ColectivoRepository) AddToColectivo(tipo int32, claves []*colectivoEnti
 		err := tx.QueryRow(queryCheck, idColectivo, detalle.Id_medicamento).Scan(&cantidadActual)
 
 		if err == sql.ErrNoRows {
-			// No existe, insertar nuevo registro
 			queryInsert := `
 				INSERT INTO colectivo_detalle (id_colectivo, id_medicamento, cantidad)
 				VALUES (?, ?, ?)
@@ -309,7 +308,6 @@ func (r *ColectivoRepository) AddToColectivo(tipo int32, claves []*colectivoEnti
 		} else if err != nil {
 			return fmt.Errorf("error al verificar detalle existente: %w", err)
 		} else {
-			// Ya existe, actualizar sumando las cantidades
 			nuevaCantidad := cantidadActual + detalle.Cantidad
 			queryUpdate := `
 				UPDATE colectivo_detalle 
@@ -323,11 +321,8 @@ func (r *ColectivoRepository) AddToColectivo(tipo int32, claves []*colectivoEnti
 			}
 		}
 	}
-
-	// Confirmar transacción
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("error al confirmar transacción: %w", err)
 	}
-
 	return nil
 }

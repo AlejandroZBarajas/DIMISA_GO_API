@@ -9,5 +9,5 @@ type ColectivoInterface interface {
 	GetColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error)
 	GetPendingColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error)
 	GetUpdatableColectivosByCendis(id int32) ([]*colectivoEntity.ColectivoDTO, error)
-	AddToColectivo(tipo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error
+	AddToColectivo(id_cendis, tipo int32, claves []*colectivoEntity.ColectivoDetalleEntity) error
 }
