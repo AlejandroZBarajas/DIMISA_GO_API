@@ -148,6 +148,8 @@ func RegisterRoutes(db *sql.DB) {
 	deleteSalidaUC := &salidasApp.DeleteSalida{Repo: salidasRepo}
 	getSalidasByCendisUC := &salidasApp.GetSalidasByCendis{Repo: salidasRepo}
 	getSalidasPendientesUC := &salidasApp.GetSalidasPendientes{Repo: salidasRepo}
+	addToSalidaUC := &salidasApp.AddToSalida{Repo: salidasRepo}
+	cerrarSalidaUC := &salidasApp.CerrarSalida{Repo: salidasRepo}
 
 	salidasController := salidasInfra.NewSalidasController(
 		createSlidaUC,
@@ -155,13 +157,17 @@ func RegisterRoutes(db *sql.DB) {
 		deleteSalidaUC,
 		getSalidasByCendisUC,
 		getSalidasPendientesUC,
+		addToSalidaUC,
+		cerrarSalidaUC,
 	)
 
 	mux.HandleFunc("/salidas/create", salidasController.CreateSalidaHandler)
-	mux.HandleFunc("/salidas/update", salidasController.UpdateSalidaHandler)
+	mux.HandleFunc("/salidas/update/", salidasController.UpdateSalidaHandler)
 	mux.HandleFunc("/salidas/delete", salidasController.DeleteSalidaHandler)
 	mux.HandleFunc("/salidas/cendis", salidasController.GetSalidasByCendisHandler)
 	mux.HandleFunc("/salidas/abiertas", salidasController.GetSalidasPendientesHandler)
+	mux.HandleFunc("/salidas/add", salidasController.AddToSalidaHandler)
+	mux.HandleFunc("/salidas/close", salidasController.CerrarSalidaHandler)
 
 	log.Println(" Rutas de salidas registradas")
 

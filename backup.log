@@ -3,3 +3,8 @@ mysqldump: [Warning] Using a password on the command line interface can be insec
 Respaldo completado exitosamente: /home/informatica/DIMISA/DIMISA_API/backup_mysql.sql.gz
 Tamaño: 1,5M
 
+=== Respaldo iniciado: dom 21 dic 2025 17:30:01 CST ===
+mysqldump: [Warning] Using a password on the command line interface can be insecure.
+Respaldo completado exitosamente: /home/informatica/DIMISA/DIMISA_API/backup_mysql.sql.gz
+Tamaño: 1,5M
+

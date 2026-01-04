@@ -9,6 +9,6 @@ type UpdateSalida struct {
 	Repo salidasDomain.SalidasInterface
 }
 
-func (uc *UpdateSalida) Execute(salida *salidaEntity.SalidaEntity) error {
-	return uc.Repo.UpdateSalida(salida)
+func (uc *UpdateSalida) Execute(id_salida int32, salida *salidaEntity.SalidaEntity) error {
+	return uc.Repo.UpdateSalida(id_salida, salida)
 }
