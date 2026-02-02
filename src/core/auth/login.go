@@ -28,8 +28,10 @@ type loginResponse struct {
 	IdRol         int32  `json:"id_rol"`
 	Token         string `json:"token"`
 	NombreUsuario string `json:"nombre_usuario"`
-	IdArea        *int32 `json:"id_area,omitempty"`   // Solo para rol 5
+	IdArea        *int32 `json:"id_area,omitempty"` // Solo para rol 5
+	Area          string `json:"area"`
 	IdCendis      *int32 `json:"id_cendis,omitempty"` // Solo para rol 6
+	Cendis        string `json:"cendis"`
 }
 
 func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -67,20 +69,17 @@ func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Comparar password
 	if bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)) != nil {
 		http.Error(w, "Credenciales incorrectas", http.StatusUnauthorized)
 		return
 	}
 
-	// Leer el secreto JWT
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		http.Error(w, "JWT_SECRET no definido", http.StatusInternalServerError)
 		return
 	}
 
-	// Claims del token
 	claims := jwt.MapClaims{
 		"id_usuario": user.Id_usuario,
 		"id_rol":     user.Id_rol,
@@ -93,35 +92,50 @@ func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ------------------------------------------------------------------
-	// Obtener datos extra según el rol
-	// ------------------------------------------------------------------
 	var idArea *int32
+	var area string
 	var idCendis *int32
+	var cendis string
 
 	switch user.Id_rol {
 	case 5: // Enfermería
-		queryArea := `SELECT id_area FROM enfermeria_users WHERE id_user = ?`
-		_ = lh.DB.QueryRow(queryArea, user.Id_usuario).Scan(&idArea)
+		queryIDArea := `SELECT id_area FROM enfermeria_users WHERE id_user = ?`
+		if err := lh.DB.QueryRow(queryIDArea, user.Id_usuario).Scan(&idArea); err != nil {
+			fmt.Printf("Error obteniendo id_area: %v\n", err)
+		}
+		if idArea != nil {
+			queryArea := `SELECT nombre_area FROM areas WHERE id_area = ?`
+			if err := lh.DB.QueryRow(queryArea, idArea).Scan(&area); err != nil {
+				fmt.Printf("Error obteniendo nombre_area: %v\n", err)
+			}
+		}
 
 	case 6: // Cendis
-		queryCendis := `SELECT id_cendis FROM unidosis_users WHERE id_user = ?`
-		_ = lh.DB.QueryRow(queryCendis, user.Id_usuario).Scan(&idCendis)
+		queryIDCendis := `SELECT id_cendis FROM unidosis_users WHERE id_user = ?`
+		if err := lh.DB.QueryRow(queryIDCendis, user.Id_usuario).Scan(&idCendis); err != nil {
+			fmt.Printf("Error obteniendo id_cendis: %v\n", err)
+		}
+		if idCendis != nil {
+			queryCendis := `SELECT cendis_nombre FROM cendis WHERE id_cendis = ?`
+			if err := lh.DB.QueryRow(queryCendis, idCendis).Scan(&cendis); err != nil {
+				fmt.Printf("Error obteniendo cendis_nombre: %v\n", err)
+			}
+		}
 	}
 
 	nombreCompleto := strings.TrimSpace(
 		fmt.Sprintf("%s %s %s", user.Nombres, user.Apellido1, user.Apellido2),
 	)
-	// ------------------------------------------------------------------
-	// Respuesta final
-	// ------------------------------------------------------------------
+
 	resp := loginResponse{
 		IdUsuario:     user.Id_usuario,
 		IdRol:         user.Id_rol,
 		Token:         tokenString,
 		NombreUsuario: nombreCompleto,
 		IdArea:        idArea,
+		Area:          area,
 		IdCendis:      idCendis,
+		Cendis:        cendis,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

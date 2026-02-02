@@ -29,6 +29,31 @@ func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) (
 		}
 	}()
 
+	// 1. Validar inventario suficiente ANTES de crear la salida
+	for _, detalle := range salida.Claves {
+		var cantidadActual int32
+		queryCheck := `
+			SELECT cantidad_actual 
+			FROM inventarios 
+			WHERE id_cendis = ? AND id_medicamento = ?
+		`
+		err = tx.QueryRow(queryCheck, salida.Id_cendis, detalle.Id_medicamento).Scan(&cantidadActual)
+
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("medicamento %d no existe en inventario del cendis %d",
+				detalle.Id_medicamento, salida.Id_cendis)
+		}
+		if err != nil {
+			return 0, fmt.Errorf("error al verificar inventario: %w", err)
+		}
+
+		if cantidadActual < detalle.Cantidad {
+			return 0, fmt.Errorf("inventario insuficiente para medicamento %d: disponible=%d, solicitado=%d",
+				detalle.Id_medicamento, cantidadActual, detalle.Cantidad)
+		}
+	}
+
+	// 2. Crear la salida
 	querySalida := `
 		INSERT INTO salidas (id_area, id_cendis, id_usuario, fecha, editable, pendiente, tipo_id, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
@@ -42,7 +67,7 @@ func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) (
 		salida.Fecha,
 		salida.Editable,
 		salida.Pendiente,
-		salida.Tipo_id, // ← Asegúrate de incluir tipo_id
+		salida.Tipo_id,
 	)
 
 	if err != nil {
@@ -56,26 +81,34 @@ func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) (
 
 	salida.Id_salida = int32(id)
 
+	// 3. Insertar detalles y descontar inventario
 	queryDetalle := `
 		INSERT INTO salidas_detalle (id_salida, id_medicamento, cantidad)
 		VALUES (?, ?, ?)
 	`
 
+	queryDescuento := `
+		UPDATE inventarios 
+		SET cantidad_actual = cantidad_actual - ?, 
+		    updated_at = CURDATE()
+		WHERE id_cendis = ? AND id_medicamento = ?
+	`
+
 	for _, detalle := range salida.Claves {
-		// Validar cantidad
 		if detalle.Cantidad <= 0 {
 			return 0, fmt.Errorf("la cantidad debe ser mayor a 0 para el medicamento %d", detalle.Id_medicamento)
 		}
 
-		_, err = tx.Exec(
-			queryDetalle,
-			salida.Id_salida,
-			detalle.Id_medicamento,
-			detalle.Cantidad,
-		)
-
+		// Insertar detalle
+		_, err = tx.Exec(queryDetalle, salida.Id_salida, detalle.Id_medicamento, detalle.Cantidad)
 		if err != nil {
 			return 0, fmt.Errorf("error al insertar detalle de salida: %w", err)
+		}
+
+		// Descontar del inventario
+		_, err = tx.Exec(queryDescuento, detalle.Cantidad, salida.Id_cendis, detalle.Id_medicamento)
+		if err != nil {
+			return 0, fmt.Errorf("error al descontar inventario: %w", err)
 		}
 	}
 
@@ -83,7 +116,6 @@ func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) (
 		return 0, fmt.Errorf("error al confirmar transacción: %w", err)
 	}
 
-	// Retornar el ID de la salida creada
 	return salida.Id_salida, nil
 }
 
