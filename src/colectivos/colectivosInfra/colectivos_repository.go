@@ -326,3 +326,14 @@ func (r *ColectivoRepository) AddToColectivo(id_cendis, tipo int32, claves []*co
 	}
 	return nil
 }
+
+func (r *ColectivoRepository) CloseColectivo(id int32) error {
+	query := "UPDATE colectivos SET editable = 0 WHERE id_colectivo = ?"
+
+	_, err := r.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error al cerrar colectivo: %w", err)
+	}
+
+	return nil
+}

@@ -14,6 +14,7 @@ type ColectivosController struct {
 	GetPendingByCendisUC    *colectivosApp.GetPendingColectivosByCendis
 	GetUpdatablesByCendisUC *colectivosApp.GetUpdatableColectivosByCendis
 	AddToColectivoUC        *colectivosApp.AddToColectivo
+	CloseColectivoUC        *colectivosApp.CloseColectivo
 }
 
 func NewColectivosController(
@@ -22,6 +23,7 @@ func NewColectivosController(
 	getPendingByCendisUC *colectivosApp.GetPendingColectivosByCendis,
 	getUpdatablesByCendisUC *colectivosApp.GetUpdatableColectivosByCendis,
 	addToColectivoUC *colectivosApp.AddToColectivo,
+	closeColectivoUC *colectivosApp.CloseColectivo,
 ) *ColectivosController {
 	return &ColectivosController{
 		CreateColectivoUC:       createUC,
@@ -29,6 +31,7 @@ func NewColectivosController(
 		GetPendingByCendisUC:    getPendingByCendisUC,
 		GetUpdatablesByCendisUC: getUpdatablesByCendisUC,
 		AddToColectivoUC:        addToColectivoUC,
+		CloseColectivoUC:        closeColectivoUC,
 	}
 }
 
@@ -142,4 +145,23 @@ func (cc *ColectivosController) AddToColectivoHandler(w http.ResponseWriter, r *
 		"success": true,
 		"message": "Detalles agregados correctamente al colectivo",
 	})
+}
+
+func (cc *ColectivosController) CloseColectivoHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID int32 `json:"id_colectivo"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := cc.CloseColectivoUC.Execute(req.ID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Colectivo cerrado exitosamente"})
 }

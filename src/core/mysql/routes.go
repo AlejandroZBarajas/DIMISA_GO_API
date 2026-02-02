@@ -207,6 +207,7 @@ func RegisterRoutes(db *sql.DB) {
 	getPendingColectivosByCendisUC := &colectivosApp.GetPendingColectivosByCendis{Repo: colectivosRepo}
 	getUpdatableColectivosByCendisUC := &colectivosApp.GetUpdatableColectivosByCendis{Repo: colectivosRepo}
 	addToColectivoUC := &colectivosApp.AddToColectivo{Repo: colectivosRepo}
+	closeColectivoUC := &colectivosApp.CloseColectivo{Repo: colectivosRepo}
 
 	colectivosController := colectivosInfra.NewColectivosController(
 		createColectivoUC,
@@ -214,6 +215,7 @@ func RegisterRoutes(db *sql.DB) {
 		getPendingColectivosByCendisUC,
 		getUpdatableColectivosByCendisUC,
 		addToColectivoUC,
+		closeColectivoUC,
 	)
 
 	// === ENTRADAS ===
@@ -231,6 +233,7 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
 	mux.HandleFunc("/colectivos/editables", colectivosController.GetUpdatableColectivosByCendisHandler) //POST
 	mux.HandleFunc("/colectivos/add", colectivosController.AddToColectivoHandler)
+	mux.HandleFunc("/colectivos/close", colectivosController.CloseColectivoHandler) //PUT
 	log.Println("Rutas de colectivos registradas")
 
 	tiposRepo := &tiposInfra.TiposRepository{DB: db}
