@@ -40,7 +40,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-func RegisterRoutes(db *sql.DB) {
+func RegisterRoutes(db *sql.DB) http.Handler {
 
 	mux := http.NewServeMux()
 
@@ -246,4 +246,5 @@ func RegisterRoutes(db *sql.DB) {
 
 	log.Println("Servidor escuchando en :8080")
 	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
+	return corsMiddleware(mux)
 }
