@@ -33,7 +33,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
@@ -242,9 +242,9 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 
 	mux.HandleFunc("/tipos", tiposController.GetTiposHandler) // GET
 
-	handlerWithCors := corsMiddleware(mux)
+	//handlerWithCors := corsMiddleware(mux)
 
+	//log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 	log.Println("Servidor escuchando en :8080")
-	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 	return corsMiddleware(mux)
 }
