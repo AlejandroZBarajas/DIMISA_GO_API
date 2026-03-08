@@ -71,3 +71,69 @@ func (r *ClaveRepository) SearchClave(s string) ([]*claveEntity.ClaveEntity, err
 
 	return claves, nil
 }
+
+// ClaveRepository - nuevo método SearchInInventory
+func (r *ClaveRepository) SearchInInventory(s string, id int32) ([]*claveEntity.ClaveEntity, error) {
+	query := `
+		SELECT 
+			m.id_medicamento, 
+			m.clave_med, 
+			m.descripcion,
+			i.cantidad_actual
+		FROM medicamentos m
+		INNER JOIN inventarios i ON m.id_medicamento = i.id_medicamento
+		WHERE 
+			i.id_cendis = ?
+			AND (
+				m.clave_med LIKE ? 
+				OR m.descripcion LIKE ?
+			)
+		ORDER BY 
+			CASE 
+				WHEN m.clave_med = ? THEN 1
+				WHEN m.clave_med LIKE ? THEN 2
+				ELSE 3
+			END,
+			m.clave_med
+		LIMIT 50
+	`
+
+	searchTerm := "%" + s + "%"
+	exactMatch := s
+	startsWithMatch := s + "%"
+
+	rows, err := r.DB.Query(
+		query,
+		id,              // i.id_cendis = ?
+		searchTerm,      // clave_med LIKE ?
+		searchTerm,      // descripcion LIKE ?
+		exactMatch,      // ORDER BY CASE exact match
+		startsWithMatch, // ORDER BY CASE starts with
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error en query: %w", err)
+	}
+	defer rows.Close()
+
+	claves := []*claveEntity.ClaveEntity{}
+
+	for rows.Next() {
+		var c claveEntity.ClaveEntity
+		err := rows.Scan(
+			&c.Id_medicamento,
+			&c.Clave_med,
+			&c.Descripcion,
+			&c.Cantidad_actual,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error al escanear resultado: %w", err)
+		}
+		claves = append(claves, &c)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error al iterar resultados: %w", err)
+	}
+
+	return claves, nil
+}

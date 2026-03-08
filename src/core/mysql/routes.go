@@ -194,9 +194,12 @@ func RegisterRoutes(db *sql.DB) http.Handler {
 
 	claveRepo := &clavesInfra.ClaveRepository{DB: db}
 	searchClaveUC := &clavesApp.SearchClave{Repo: claveRepo}
-	claveController := clavesInfra.NewClaveController(searchClaveUC)
+	searchInventoryUC := &clavesApp.SearchInInventory{Repo: claveRepo}
 
-	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave) // GET
+	claveController := clavesInfra.NewClaveController(searchClaveUC, searchInventoryUC)
+
+	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave)              // GET
+	mux.HandleFunc("/medicamentos/inventory/search", claveController.SearchInInventory) // GET
 
 	log.Println("Rutas de medicamentos registradas")
 
