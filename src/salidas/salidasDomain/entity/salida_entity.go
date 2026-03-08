@@ -2,6 +2,7 @@ package salidaEntity
 
 type SalidaEntity struct {
 	Id_salida  int32                 `json:"id_salida"`
+	Tipo_id    int32                 `json:"tipo_id"`
 	Id_area    int32                 `json:"id_area"`
 	Id_cendis  int32                 `json:"id_cendis"`
 	Id_usuario int32                 `json:"id_usuario"`

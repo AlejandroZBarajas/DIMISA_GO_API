@@ -13,30 +13,50 @@ type SalidasRepository struct {
 func NewSalidasRepository(db *sql.DB) *SalidasRepository {
 	return &SalidasRepository{DB: db}
 }
-
-func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) error {
-	// Validar que el array de claves no esté vacío
+func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) (int32, error) {
 	if len(salida.Claves) == 0 {
-		return fmt.Errorf("la salida debe contener al menos un medicamento")
+		return 0, fmt.Errorf("la salida debe contener al menos un medicamento")
 	}
 
-	// Iniciar transacción
 	tx, err := repo.DB.Begin()
 	if err != nil {
-		return fmt.Errorf("error al iniciar transacción: %w", err)
+		return 0, fmt.Errorf("error al iniciar transacción: %w", err)
 	}
 
-	// Defer para manejar rollback en caso de error
 	defer func() {
 		if err != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// Insertar salida principal
+	// 1. Validar inventario suficiente ANTES de crear la salida
+	for _, detalle := range salida.Claves {
+		var cantidadActual int32
+		queryCheck := `
+			SELECT cantidad_actual 
+			FROM inventarios 
+			WHERE id_cendis = ? AND id_medicamento = ?
+		`
+		err = tx.QueryRow(queryCheck, salida.Id_cendis, detalle.Id_medicamento).Scan(&cantidadActual)
+
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("medicamento %d no existe en inventario del cendis %d",
+				detalle.Id_medicamento, salida.Id_cendis)
+		}
+		if err != nil {
+			return 0, fmt.Errorf("error al verificar inventario: %w", err)
+		}
+
+		if cantidadActual < detalle.Cantidad {
+			return 0, fmt.Errorf("inventario insuficiente para medicamento %d: disponible=%d, solicitado=%d",
+				detalle.Id_medicamento, cantidadActual, detalle.Cantidad)
+		}
+	}
+
+	// 2. Crear la salida
 	querySalida := `
-		INSERT INTO salidas (id_area, id_cendis, id_usuario, fecha, editable, pendiente, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, NOW())
+		INSERT INTO salidas (id_area, id_cendis, id_usuario, fecha, editable, pendiente, tipo_id, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
 	`
 
 	result, err := tx.Exec(
@@ -47,54 +67,64 @@ func (repo *SalidasRepository) CreateSalida(salida *salidaEntity.SalidaEntity) e
 		salida.Fecha,
 		salida.Editable,
 		salida.Pendiente,
+		salida.Tipo_id,
 	)
 
 	if err != nil {
-		return fmt.Errorf("error al crear salida: %w", err)
+		return 0, fmt.Errorf("error al crear salida: %w", err)
 	}
 
-	// Obtener el ID generado
 	id, err := result.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("error al obtener id de salida: %w", err)
+		return 0, fmt.Errorf("error al obtener id de salida: %w", err)
 	}
 
 	salida.Id_salida = int32(id)
 
-	// Insertar detalles
+	// 3. Insertar detalles y descontar inventario
 	queryDetalle := `
 		INSERT INTO salidas_detalle (id_salida, id_medicamento, cantidad)
 		VALUES (?, ?, ?)
 	`
 
-	for _, detalle := range salida.Claves {
-		_, err = tx.Exec(
-			queryDetalle,
-			salida.Id_salida,
-			detalle.Id_medicamento,
-			detalle.Cantidad,
-		)
+	queryDescuento := `
+		UPDATE inventarios 
+		SET cantidad_actual = cantidad_actual - ?, 
+		    updated_at = CURDATE()
+		WHERE id_cendis = ? AND id_medicamento = ?
+	`
 
+	for _, detalle := range salida.Claves {
+		if detalle.Cantidad <= 0 {
+			return 0, fmt.Errorf("la cantidad debe ser mayor a 0 para el medicamento %d", detalle.Id_medicamento)
+		}
+
+		// Insertar detalle
+		_, err = tx.Exec(queryDetalle, salida.Id_salida, detalle.Id_medicamento, detalle.Cantidad)
 		if err != nil {
-			return fmt.Errorf("error al insertar detalle de salida: %w", err)
+			return 0, fmt.Errorf("error al insertar detalle de salida: %w", err)
+		}
+
+		// Descontar del inventario
+		_, err = tx.Exec(queryDescuento, detalle.Cantidad, salida.Id_cendis, detalle.Id_medicamento)
+		if err != nil {
+			return 0, fmt.Errorf("error al descontar inventario: %w", err)
 		}
 	}
 
-	// Commit de la transacción
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("error al confirmar transacción: %w", err)
+		return 0, fmt.Errorf("error al confirmar transacción: %w", err)
 	}
 
-	return nil
+	return salida.Id_salida, nil
 }
 
-func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) error {
-	// Validar que el array de claves no esté vacío
+func (repo *SalidasRepository) UpdateSalida(id_salida int32, salida *salidaEntity.SalidaEntity) error {
+
 	if len(salida.Claves) == 0 {
 		return fmt.Errorf("la salida debe contener al menos un medicamento")
 	}
 
-	// Iniciar transacción
 	tx, err := repo.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("error al iniciar transacción: %w", err)
@@ -106,22 +136,27 @@ func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) e
 		}
 	}()
 
-	// Actualizar salida principal
+	var editable bool
+	err = tx.QueryRow("SELECT editable FROM salidas WHERE id_salida = ?", id_salida).Scan(&editable)
+
+	if err != nil {
+		return fmt.Errorf("salida no encontrada: %w", err)
+	}
+
+	if !editable {
+		return fmt.Errorf("la salida no puede ser editada")
+	}
+
 	querySalida := `
 		UPDATE salidas
-		SET id_area = ?, id_cendis = ?, id_usuario = ?, fecha = ?, editable = ?, pendiente = ?
+		SET fecha = ?
 		WHERE id_salida = ?
 	`
 
 	result, err := tx.Exec(
 		querySalida,
-		salida.Id_area,
-		salida.Id_cendis,
-		salida.Id_usuario,
 		salida.Fecha,
-		salida.Editable,
-		salida.Pendiente,
-		salida.Id_salida,
+		id_salida,
 	)
 
 	if err != nil {
@@ -134,26 +169,28 @@ func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) e
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("salida no encontrada")
+		return fmt.Errorf("no se pudo actualizar la salida")
 	}
 
-	// Eliminar todos los detalles anteriores
 	queryDeleteDetalles := `DELETE FROM salidas_detalle WHERE id_salida = ?`
-	_, err = tx.Exec(queryDeleteDetalles, salida.Id_salida)
+	_, err = tx.Exec(queryDeleteDetalles, id_salida)
 	if err != nil {
 		return fmt.Errorf("error al eliminar detalles anteriores: %w", err)
 	}
 
-	// Insertar nuevos detalles
 	queryDetalle := `
 		INSERT INTO salidas_detalle (id_salida, id_medicamento, cantidad)
 		VALUES (?, ?, ?)
 	`
 
 	for _, detalle := range salida.Claves {
+		if detalle.Cantidad <= 0 {
+			return fmt.Errorf("la cantidad debe ser mayor a 0 para el medicamento %d", detalle.Id_medicamento)
+		}
+
 		_, err = tx.Exec(
 			queryDetalle,
-			salida.Id_salida,
+			id_salida,
 			detalle.Id_medicamento,
 			detalle.Cantidad,
 		)
@@ -163,7 +200,6 @@ func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) e
 		}
 	}
 
-	// Commit de la transacción
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("error al confirmar transacción: %w", err)
 	}
@@ -172,7 +208,6 @@ func (repo *SalidasRepository) UpdateSalida(salida *salidaEntity.SalidaEntity) e
 }
 
 func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEntity.SalidaEntity, error) {
-	// Query principal para obtener las salidas
 	querySalidas := `
 		SELECT id_salida, id_area, id_cendis, id_usuario, fecha, created_at, editable, pendiente
 		FROM salidas
@@ -204,7 +239,6 @@ func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEnt
 			return nil, fmt.Errorf("error al escanear salida: %w", err)
 		}
 
-		// Obtener los detalles de esta salida
 		queryDetalles := `
 			SELECT id_salida_detalle, id_salida, id_medicamento, cantidad
 			FROM salidas_detalle
@@ -233,9 +267,7 @@ func (repo *SalidasRepository) GetSalidasByCendis(id_cendis int32) (*[]salidaEnt
 		}
 		detalleRows.Close()
 
-		// Asignar los detalles a la salida
 		salida.Claves = detalles
-
 		salidas = append(salidas, salida)
 	}
 
@@ -267,6 +299,58 @@ func (repo *SalidasRepository) DeleteSalida(id_salida int32) error {
 }
 
 func (repo *SalidasRepository) GetSalidasPendientes(id_cendis int32) (*[]salidaEntity.SalidaEntity, error) {
-	// Este método lo trabajamos después con más detalle
 	return nil, fmt.Errorf("método no implementado aún")
+}
+
+func (repo *SalidasRepository) AddToSalida(id_cendis, id_area, tipo int32, claves *[]salidaEntity.SalidaDetalleEntity) error {
+	return fmt.Errorf("método no implementado aún")
+
+}
+
+func (repo *SalidasRepository) CerrarSalida(id_salida int32) error {
+	// Verificar que la salida existe y está pendiente
+	var pendiente bool
+	var editable bool
+
+	err := repo.DB.QueryRow(
+		"SELECT pendiente, editable FROM salidas WHERE id_salida = ?",
+		id_salida,
+	).Scan(&pendiente, &editable)
+
+	if err != nil {
+		return fmt.Errorf("salida no encontrada: %w", err)
+	}
+
+	// Validar que la salida esté pendiente
+	if !pendiente {
+		return fmt.Errorf("la salida ya fue cerrada anteriormente")
+	}
+
+	// Validar que la salida sea editable
+	if !editable {
+		return fmt.Errorf("la salida no es editable")
+	}
+
+	// Actualizar: editable = false, pendiente = false
+	query := `
+		UPDATE salidas 
+		SET editable = 0, pendiente = 0
+		WHERE id_salida = ?
+	`
+
+	result, err := repo.DB.Exec(query, id_salida)
+	if err != nil {
+		return fmt.Errorf("error al cerrar salida: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error al verificar actualización: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no se pudo cerrar la salida")
+	}
+
+	return nil
 }

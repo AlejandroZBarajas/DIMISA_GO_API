@@ -17,7 +17,7 @@ func main() {
 
 	db := mysql.InitMySQL()
 
-	mysql.RegisterRoutes(db)
+	handler := mysql.RegisterRoutes(db)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -25,8 +25,5 @@ func main() {
 	}
 
 	log.Printf("🚀 Servidor corriendo en http://localhost:%s\n", port)
-	err = http.ListenAndServe(":"+port, nil)
-	if err != nil {
-		log.Fatalf("❌ Error al iniciar el servidor: %v", err)
-	}
+	log.Fatal(http.ListenAndServe(":"+port, handler))
 }

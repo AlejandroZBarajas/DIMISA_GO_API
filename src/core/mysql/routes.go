@@ -16,8 +16,11 @@ import (
 	"DIMISA/src/entradas/entradasInfra"
 	"DIMISA/src/salidas/salidasApp"
 	"DIMISA/src/salidas/salidasInfra"
+	"DIMISA/src/tipos_colectivo_salida/tiposApp"
+	"DIMISA/src/tipos_colectivo_salida/tiposInfra"
 	"DIMISA/src/users/userApp"
 	"DIMISA/src/users/userInfra"
+
 	"database/sql"
 	"log"
 	"net/http"
@@ -30,14 +33,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
 		next.ServeHTTP(w, r)
 	})
 }
-func RegisterRoutes(db *sql.DB) {
+func RegisterRoutes(db *sql.DB) http.Handler {
 
 	mux := http.NewServeMux()
 
@@ -145,6 +148,8 @@ func RegisterRoutes(db *sql.DB) {
 	deleteSalidaUC := &salidasApp.DeleteSalida{Repo: salidasRepo}
 	getSalidasByCendisUC := &salidasApp.GetSalidasByCendis{Repo: salidasRepo}
 	getSalidasPendientesUC := &salidasApp.GetSalidasPendientes{Repo: salidasRepo}
+	addToSalidaUC := &salidasApp.AddToSalida{Repo: salidasRepo}
+	cerrarSalidaUC := &salidasApp.CerrarSalida{Repo: salidasRepo}
 
 	salidasController := salidasInfra.NewSalidasController(
 		createSlidaUC,
@@ -152,13 +157,17 @@ func RegisterRoutes(db *sql.DB) {
 		deleteSalidaUC,
 		getSalidasByCendisUC,
 		getSalidasPendientesUC,
+		addToSalidaUC,
+		cerrarSalidaUC,
 	)
 
 	mux.HandleFunc("/salidas/create", salidasController.CreateSalidaHandler)
-	mux.HandleFunc("/salidas/update", salidasController.UpdateSalidaHandler)
+	mux.HandleFunc("/salidas/update/", salidasController.UpdateSalidaHandler)
 	mux.HandleFunc("/salidas/delete", salidasController.DeleteSalidaHandler)
 	mux.HandleFunc("/salidas/cendis", salidasController.GetSalidasByCendisHandler)
-	mux.HandleFunc("/salidas/pendientes", salidasController.GetSalidasPendientesHandler)
+	mux.HandleFunc("/salidas/abiertas", salidasController.GetSalidasPendientesHandler)
+	mux.HandleFunc("/salidas/add", salidasController.AddToSalidaHandler)
+	mux.HandleFunc("/salidas/close", salidasController.CerrarSalidaHandler)
 
 	log.Println(" Rutas de salidas registradas")
 
@@ -185,9 +194,12 @@ func RegisterRoutes(db *sql.DB) {
 
 	claveRepo := &clavesInfra.ClaveRepository{DB: db}
 	searchClaveUC := &clavesApp.SearchClave{Repo: claveRepo}
-	claveController := clavesInfra.NewClaveController(searchClaveUC)
+	searchInventoryUC := &clavesApp.SearchInInventory{Repo: claveRepo}
 
-	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave) // GET
+	claveController := clavesInfra.NewClaveController(searchClaveUC, searchInventoryUC)
+
+	mux.HandleFunc("/medicamentos/search", claveController.SearchForClave)              // GET
+	mux.HandleFunc("/medicamentos/inventory/search", claveController.SearchInInventory) // GET
 
 	log.Println("Rutas de medicamentos registradas")
 
@@ -197,12 +209,16 @@ func RegisterRoutes(db *sql.DB) {
 	getColectivosByCendisUC := &colectivosApp.GetColectivosByCendis{Repo: colectivosRepo}
 	getPendingColectivosByCendisUC := &colectivosApp.GetPendingColectivosByCendis{Repo: colectivosRepo}
 	getUpdatableColectivosByCendisUC := &colectivosApp.GetUpdatableColectivosByCendis{Repo: colectivosRepo}
+	addToColectivoUC := &colectivosApp.AddToColectivo{Repo: colectivosRepo}
+	closeColectivoUC := &colectivosApp.CloseColectivo{Repo: colectivosRepo}
 
 	colectivosController := colectivosInfra.NewColectivosController(
 		createColectivoUC,
 		getColectivosByCendisUC,
 		getPendingColectivosByCendisUC,
 		getUpdatableColectivosByCendisUC,
+		addToColectivoUC,
+		closeColectivoUC,
 	)
 
 	// === ENTRADAS ===
@@ -219,10 +235,19 @@ func RegisterRoutes(db *sql.DB) {
 	mux.HandleFunc("/colectivos/by-cendis", colectivosController.GetColectivosByCendisHandler)          // POST
 	mux.HandleFunc("/colectivos/pending", colectivosController.GetPendingColectivosByCendisHandler)     // POST
 	mux.HandleFunc("/colectivos/editables", colectivosController.GetUpdatableColectivosByCendisHandler) //POST
+	mux.HandleFunc("/colectivos/add", colectivosController.AddToColectivoHandler)
+	mux.HandleFunc("/colectivos/close", colectivosController.CloseColectivoHandler) //PUT
 	log.Println("Rutas de colectivos registradas")
 
-	handlerWithCors := corsMiddleware(mux)
+	tiposRepo := &tiposInfra.TiposRepository{DB: db}
+	getTiposUC := &tiposApp.GetTipos{Repo: tiposRepo}
+	tiposController := tiposInfra.NewTiposController(getTiposUC)
 
+	mux.HandleFunc("/tipos", tiposController.GetTiposHandler) // GET
+
+	//handlerWithCors := corsMiddleware(mux)
+
+	//log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 	log.Println("Servidor escuchando en :8080")
-	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
+	return corsMiddleware(mux)
 }

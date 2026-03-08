@@ -6,4 +6,5 @@ import (
 
 type ClaveInterface interface {
 	SearchClave(s string) ([]*claveEntity.ClaveEntity, error)
+	SearchInInventory(s string, id int32) ([]*claveEntity.ClaveEntity, error)
 }

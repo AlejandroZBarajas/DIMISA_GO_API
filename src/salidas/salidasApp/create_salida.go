@@ -9,6 +9,6 @@ type CreateSalida struct {
 	Repo salidasDomain.SalidasInterface
 }
 
-func (uc *CreateSalida) Execute(salida *salidaEntity.SalidaEntity) error {
+func (uc *CreateSalida) Execute(salida *salidaEntity.SalidaEntity) (int32, error) {
 	return uc.Repo.CreateSalida(salida)
 }
